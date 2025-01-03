@@ -1,9 +1,8 @@
-
-
+"use client"
 import dynamic from 'next/dynamic';
 
 const OpenStreetMap = dynamic(() => import('../../components/OpenStreetMap/ostm'), {
- 
+   // Disable server-side rendering for this component
 });
 
 const Index: React.FC = () => {
@@ -18,4 +17,3 @@ const Index: React.FC = () => {
 };
 
 export default Index;
-

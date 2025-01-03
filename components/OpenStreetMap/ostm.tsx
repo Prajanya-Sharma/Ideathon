@@ -16,15 +16,51 @@ const OpenStreetmap: React.FC = () => {
   const [center, setCenter] = useState<LatLngExpression>({ lat: 30.7652305, lng: 76.7846207 })
   const [userLocation, setUserLocation] = useState<LatLngExpression | null>(null)
   const [markers, setMarkers] = useState<Record<string, MarkerData>>({})
-  const [studentId, setStudentId] = useState<string>('23104073')
+  const [studentId, setStudentId] = useState<string>('23104073') // Default student ID
   const wsRef = useRef<WebSocket | null>(null)
   const userLocationRef = useRef<LatLngExpression | null>(null)
   const ZOOM_LEVEL = 10
   const sendLocationTimeout = useRef<NodeJS.Timeout | null>(null)
 
+  // Helper function to convert degrees to radians
+  const degreesToRadians = (degrees: number) => {
+    return degrees * Math.PI / 180;
+  }
+
+  // Function to calculate distance in km between two coordinates
+  const distanceInKmBetweenEarthCoordinates = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const earthRadiusKm = 6371;
+    const dLat = degreesToRadians(lat2 - lat1);
+    const dLon = degreesToRadians(lon2 - lon1);
+
+    lat1 = degreesToRadians(lat1);
+    lat2 = degreesToRadians(lat2);
+
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2); 
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); 
+    return earthRadiusKm * c;
+  }
+
   useEffect(() => {
-    const storedStudentId = localStorage.getItem('studentId') || '23104073'
-    setStudentId(storedStudentId)
+    const fetchStudentId = async () => {
+      try {
+        const response = await fetch("/api/getStudent_Id")
+        const data = await response.json()
+        if (data.student_id) {
+          setStudentId(data.student_id)
+          localStorage.setItem('studentId', data.student_id) 
+        } else {
+          console.error("Error fetching student ID:", data.message)
+          setStudentId('23104073') 
+        }
+      } catch (error) {
+        console.error("Error fetching student ID:", error)
+        setStudentId('23104073') 
+      }
+    }
+
+    fetchStudentId()
 
     const socket = new WebSocket('ws://localhost:3000')
     wsRef.current = socket
@@ -54,7 +90,7 @@ const OpenStreetmap: React.FC = () => {
             ...updatedMarkers,
           }))
         } else {
-          setMarkers({});
+          setMarkers({})
           console.log('No friends :(')
         }
         sendLocation()
@@ -139,17 +175,25 @@ const OpenStreetmap: React.FC = () => {
       />
 
       {/* Render friends' markers */}
-      {Object.values(markers).map((marker) => (
-        <Marker
-          key={marker.student_id}
-          position={[marker.latitude, marker.longitude]}
-          icon={customIcon}
-        >
-          <Popup>
-            Friend ID: {marker.student_id}
-          </Popup>
-        </Marker>
-      ))}
+      {Object.values(markers).map((marker) => {
+        let distance: string | undefined
+        if (userLocation) {
+          distance = distanceInKmBetweenEarthCoordinates(userLocation.lat, userLocation.lng, marker.latitude, marker.longitude).toFixed(2) + ' km'
+        }
+
+        return (
+          <Marker
+            key={marker.student_id}
+            position={[marker.latitude, marker.longitude]}
+            icon={customIcon}
+          >
+            <Popup>
+              Friend ID: {marker.student_id} <br />
+              {distance && `Distance from you: ${distance}`}
+            </Popup>
+          </Marker>
+        )
+      })}
 
       {/* Render user's location */}
       {userLocation && (
