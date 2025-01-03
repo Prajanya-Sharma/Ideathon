@@ -329,6 +329,22 @@ const AttendanceSchema: Schema<Attendance> = new Schema({
 });
 
 
+interface Resource extends Document {
+    subjectId: string;
+    files: {
+        url: string;
+        fileName: string;
+    }[];
+}
+
+const ResourceSchema: Schema<Resource> = new Schema({
+    subjectId: { type: String, required: true },
+    files: [{
+        url: { type: String, required: true },
+        fileName: { type: String, required: true },
+    }],
+})
+
 
 export interface Request extends Document {
     user_id: mongoose.Schema.Types.ObjectId;
@@ -433,6 +449,9 @@ const RequestModel: Model<Request> =
 const FriendRequestModel: Model<FriendRequest> =
     mongoose.models.FriendRequest || mongoose.model<FriendRequest>("FriendRequest", FriendRequestSchema);
 
+const ResourceModel: Model<Resource> =
+    mongoose.models.Resource || mongoose.model<Resource>("Resource", ResourceSchema);
+
 export {
     UserModel,
     StudentModel,
@@ -443,5 +462,6 @@ export {
     AttendanceModel,
     RequestModel,
     FriendRequestModel,
-    aiChatBotModel
+    aiChatBotModel,
+    ResourceModel
 };

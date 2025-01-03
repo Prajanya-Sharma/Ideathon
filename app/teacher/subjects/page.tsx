@@ -75,7 +75,10 @@ export default function SubjectsPage() {
                 >
                   Take Attendance
                 </button>
-                <button className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-semibold shadow-lg transition-all duration-300">
+                <button
+                  className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-semibold shadow-lg transition-all duration-300"
+                  onClick={()=> router.push(`/teacher/subjects/resources/${subject.subject_code}`)}
+                >
                   Upload Resources
                 </button>
               </div>

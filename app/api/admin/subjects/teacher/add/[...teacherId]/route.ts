@@ -5,7 +5,7 @@ import {getServerSession, User} from "next-auth";
 import {authOptions} from "../../../../../(auth)/auth/[...nextauth]/options";
 import {NextResponse} from "next/server";
 import mongoose from "mongoose";
-import {SubjectModel, Teacher, TeacherModel} from "../../../../../../../model/User";
+import {ResourceModel, SubjectModel, Teacher, TeacherModel} from "../../../../../../../model/User";
 
 export async function POST(req: Request, { params }: { params: { teacherId: string[] } }) {
   try {
@@ -70,6 +70,18 @@ export async function POST(req: Request, { params }: { params: { teacherId: stri
     if (!subject) {
       return NextResponse.json(
         {error: "Failed to create subject"},
+        {status: 500}
+      )
+    }
+
+    const resource = await ResourceModel.create({
+      subjectId: subject_code,
+      files: []
+    })
+
+    if (!resource) {
+      return NextResponse.json(
+        {error: "Failed to create resource"},
         {status: 500}
       )
     }

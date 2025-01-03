@@ -171,7 +171,13 @@ interface Student {
     student_id: string;
 }
 
+interface Resource {
+    url: string;
+    fileName: string;
+}
+
 interface ModelStore {
+    resources: Resource[]|[];
     students: Student[]|[];
     groups: Group[]|[];
     subjects: Subjects|null;
@@ -188,6 +194,7 @@ interface ModelStore {
     allEvents: Event[];
     singleEvent:SingleEvent|null;
     isLoading: boolean;
+    setResources: (resources: Resource[]) => void;
     setStudents: (students: Student[]) => void;
     setGroups: (groups: Group[]) => void;
     setSubjects: (subjects: Subjects) => void;
@@ -207,6 +214,7 @@ interface ModelStore {
 }
 
 export const useModel = create<ModelStore>((set) => ({
+    resources: [],
     students: [],
     groups: [],
     subjects: null,
@@ -223,6 +231,7 @@ export const useModel = create<ModelStore>((set) => ({
     editClub:null,
     profile: null,
     isLoading: false,
+    setResources: ((resources) => set({resources: resources})),
     setStudents: ((students) => set({students: students})),
     setGroups: ((groups) => set({groups: groups})),
     setSubjects: ((subjects) => set({ subjects: subjects })),

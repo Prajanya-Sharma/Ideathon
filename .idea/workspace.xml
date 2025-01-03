@@ -5,22 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3d45d623-ee8a-421e-8d0d-07f88c3fd10c" name="Changes" comment="fixup! recovered files">
-      <change afterPath="$PROJECT_DIR$/app/api/teacher/subjects/attendance/[...subjectId]/route.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/api/teacher/subjects/groups/[...subjectId]/route.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/api/teacher/subjects/route.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/teacher/subjects/groups/[...subjectId]/page.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/teacher/subjects/groups/attendance/[...subjectId]/page.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/teacher/subjects/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_12_27_24,_11_51 AM_[Changes]/shelved.patch" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_12_27_24__11_51AM__Changes_.xml" beforeDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/api/teacher/subjects/resources/[...subjectId]/route.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/helpers/deleteCloudinary.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/api/admin/subjects/teacher/add/[...teacherId]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/admin/subjects/teacher/add/[...teacherId]/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/attendance/[teacherId]/[...subjectId]/route.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/attendance/confirmButton/route.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/marks/[...teacherId]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/teacher/marks/[...teacherId]/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/user/friends/accept-friend/[...studentId]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/user/friends/accept-friend/[...studentId]/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/clubs/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/clubs/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/events/[...eventId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/events/[...eventId]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/teacher/subjects/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/teacher/subjects/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/teacher/subjects/resources/[...subjectId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/teacher/subjects/resources/[...subjectId]/page.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/hooks/user-model-store.ts" beforeDir="false" afterPath="$PROJECT_DIR$/hooks/user-model-store.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/model/User.ts" beforeDir="false" afterPath="$PROJECT_DIR$/model/User.ts" afterDir="false" />
     </list>
@@ -32,8 +22,8 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="TypeScript File" />
         <option value="TypeScript JSX File" />
+        <option value="TypeScript File" />
       </list>
     </option>
   </component>
@@ -180,6 +170,7 @@
       <workItem from="1735834776101" duration="1436000" />
       <workItem from="1735887939114" duration="9151000" />
       <workItem from="1735912253570" duration="2503000" />
+      <workItem from="1735936579519" duration="3194000" />
     </task>
     <servers />
   </component>
