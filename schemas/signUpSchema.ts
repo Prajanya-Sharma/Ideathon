@@ -17,4 +17,8 @@ export const signUpSchema = z.object({
     .min(6, "Password must be at least 6 characters"),
   isStudent : z
     .boolean(),
+  reqAdmin : z
+    .boolean(),
+  reqTeacher : z
+    .boolean(),
 });

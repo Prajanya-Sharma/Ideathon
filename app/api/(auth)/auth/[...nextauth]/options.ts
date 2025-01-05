@@ -39,7 +39,10 @@ export const authOptions: NextAuthOptions = {
               username: user.username,
               email: user.email,
               isVerified: user.isVerified,
-              isTeacher: user.isTeacher, 
+              isTeacher: user.isTeacher,
+              isAdmin: user.isAdmin,
+              isStudent: user.isStudent,
+              sid_verification: user.sid_verification
             };
           } else {
             throw new Error('Incorrect password');
@@ -57,7 +60,10 @@ export const authOptions: NextAuthOptions = {
         token._id = user._id; // User ID
         token.username = user.username;
         token.isVerified = user.isVerified;
-        token.isTeacher = user.isTeacher; 
+        token.isTeacher = user.isTeacher;
+        token.isAdmin = user.isAdmin;
+        token.isStudent = user.isStudent;
+        token.sid_verification = user.sid_verification;
       }
       return token;
     },
@@ -66,7 +72,10 @@ export const authOptions: NextAuthOptions = {
         session.user._id = token._id;
         session.user.username = token.username;
         session.user.isVerified = token.isVerified;
-        session.user.isTeacher = token.isTeacher; // Add isTeacher to session
+        session.user.isTeacher = token.isTeacher;
+        session.user.isAdmin = token.isAdmin;
+        session.user.isStudent = token.isStudent;
+        session.user.sid_verification = token.sid_verification;
       }
       return session;
     },

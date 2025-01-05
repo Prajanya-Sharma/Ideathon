@@ -7,14 +7,20 @@ declare module 'next-auth' {
     isVerified: boolean;
     isTeacher: boolean; 
     username: string;
+    isAdmin: boolean;
+    isStudent:boolean;
+    sid_verification:boolean;
   }
 
   interface Session {
     user: {
-      _id
+      _id?: string;
       isVerified: boolean;
       isTeacher: boolean; 
       username: string;
+      isAdmin: boolean;
+      isStudent:boolean;
+      sid_verification:boolean;
     } & DefaultSession['user'];
   }
 }
@@ -25,5 +31,8 @@ declare module 'next-auth/jwt' {
     isVerified: boolean;
     isTeacher: boolean; 
     username: string;
+    isAdmin: boolean;
+    isStudent:boolean;
+    sid_verification:boolean;
   }
 }

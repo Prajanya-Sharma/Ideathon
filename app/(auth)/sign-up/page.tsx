@@ -39,7 +39,9 @@ export default function SignUpForm() {
       username: '',
       email: '',
       password: '',
-      isStudent: false, // Default value for the checkbox
+      isStudent: false,
+      reqAdmin: false,
+      reqTeacher: false,
     },
   });
 
@@ -163,20 +165,48 @@ export default function SignUpForm() {
                 </FormItem>
               )}
             />
-              <FormField
-                  name="isStudent"
-                  control={form.control}
-                  render={({ field }) => (
-                  <FormItem>
-                  <FormLabel>Are you a student?</FormLabel>
+            <FormField
+                name="isStudent"
+                control={form.control}
+                render={({ field }) => (
+                <FormItem>
+                <FormLabel>Are you a student?</FormLabel>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={(checked) => field.onChange(checked)}
+                />
+                <FormMessage />
+                </FormItem>
+                )}
+            />
+            <FormField
+              name="reqAdmin"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Request for Admin?</FormLabel>
                   <Checkbox
                     checked={field.value}
                     onCheckedChange={(checked) => field.onChange(checked)}
                   />
                   <FormMessage />
-                  </FormItem>
-                  )}
-              />
+                </FormItem>
+              )}
+            />
+            <FormField
+              name="reqTeacher"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Request for Teacher?</FormLabel>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={(checked) => field.onChange(checked)}
+                  />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? (

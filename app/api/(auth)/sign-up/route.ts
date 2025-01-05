@@ -6,8 +6,15 @@ export async function POST(request: Request) {
     await dbConnect();
     
     try {
-      const { username, email, password,isStudent } = await request.json();
+      const { username, email, password, isStudent, reqAdmin, reqTeacher } = await request.json();
       console.log('Received data:', { username, email, password });
+
+      if ((!isStudent && !reqAdmin && !reqTeacher) || (isStudent && (reqAdmin || reqTeacher)) || (reqAdmin && (isStudent || reqTeacher)) || (reqTeacher && (isStudent || reqAdmin))) {
+        return Response.json({
+          success: false,
+          message: 'Out of student, admin, and teacher, the user can select only one',
+        }, { status: 400 });
+      }
   
       // Check if the username or email already exists
       const existingVerifiedUserByUsername = await UserModel.findOne({

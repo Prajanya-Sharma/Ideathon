@@ -1,19 +1,23 @@
-export default function StudentCard() {
-
+export default function StudentCard({
+  name,
+  student_id,
+  profile,
+}: {
+  name: string;
+  student_id: string;
+  profile: string;
+}) {
   return (
-    <>
-      <div className="flex flex-row h-20 items-center justify-around w-4/5 border-2 mt-4 rounded-xl border-cyan-300 shadow-md shadow-cyan-300/50">
-        <img
-          src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTfXKzxBrv-nr-V2w6n-Hf14w-Mw-p4tD_f6GPvjOCW4CoikavWniBoh4rNfKid-VyUwH4&usqp=CAU"
-          className="flex flex-col items-center w-16 h-16 border-2 rounded-full border-cyan-300 shadow-md shadow-cyan-300/50"
-        />
-        <div className="text-xl font-bold">
-          Name
-        </div>
-        <div className="text-xl font-bold">
-          SID
-        </div>
+    <div className="flex flex-row items-center justify-start mt-5 p-4 w-full max-w-sm border-2 rounded-lg border-blue-800 bg-[#1E1E1E] hover:scale-105 transition-transform duration-300 ease-in-out shadow-lg shadow-blue-800/30 sm:max-w-md md:max-w-lg lg:max-w-xl">
+      <img
+        src={profile || "https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg"}
+        alt="Student Profile"
+        className="w-14 h-14 border-2 rounded-full border-blue-800 shadow-md shadow-blue-800/50"
+      />
+      <div className="flex flex-col ml-4 text-gray-300 w-full">
+        <div className="text-lg font-semibold truncate">{name}</div>
+        <div className="text-sm truncate">{student_id}</div>
       </div>
-    </>
-  )
+    </div>
+  );
 }

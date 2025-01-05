@@ -1,0 +1,1415 @@
+Index: app/api/admin/subjects/teacher/add/[...teacherId]/route.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>//add new subject\n\nimport dbConnect from \"../../../../../../../lib/connectDb\";\nimport {getServerSession, User} from \"next-auth\";\nimport {authOptions} from \"../../../../../(auth)/auth/[...nextauth]/options\";\nimport {NextResponse} from \"next/server\";\nimport mongoose from \"mongoose\";\nimport {SubjectModel, Teacher, TeacherModel} from \"../../../../../../../model/User\";\n\nexport async function POST(req: Request, { params }: { params: { teacherId: string[] } }) {\n  try {\n    await dbConnect();\n\n    const session = await getServerSession(authOptions);\n    const user: User = session?.user as User;\n\n    if (!session || !user) {\n      return NextResponse.json({error: 'Unauthorized. User must be logged in.'}, {status: 401});\n    }\n\n    if (!user.isAdmin) {\n      return NextResponse.json(\n        {error: 'User is not admin'},\n        {status: 401}\n      );\n    }\n\n    const { subject_code, subject_name} = await req.json()\n\n    if (!subject_code || !subject_name) {\n      return NextResponse.json(\n        {error: \"Subject code and name is required\"},\n        {status: 403}\n      )\n    }\n    const { teacherId } = await params;\n\n    if (!teacherId.length) {\n      return NextResponse.json(\n        {error: 'No teacher id found.'},\n        {status: 400}\n      );\n    }\n\n    if (!mongoose.Types.ObjectId.isValid(teacherId[0])) {\n      return NextResponse.json(\n        {error: 'Invalid teacher id'},\n        {status: 400}\n      );\n    }\n\n    const teacherObjectId = new mongoose.Types.ObjectId(teacherId[0]);\n\n    const teacher: Teacher|null = await TeacherModel.findOne(teacherObjectId);\n\n    if (!teacher) {\n      return NextResponse.json(\n        {error: 'Teacher not found'},\n        {status: 404}\n      )\n    }\n\n    const subject = await SubjectModel.create({\n      subjectId: subject_code\n    })\n\n    if (!subject) {\n      return NextResponse.json(\n        {error: \"Failed to create subject\"},\n        {status: 500}\n      )\n    }\n\n    teacher.subjectTeaching = [...teacher.subjectTeaching, {subject_name, subject_code}];\n    await teacher.save();\n\n    return NextResponse.json({status: 200});\n  } catch (error) {\n    console.error(error);\n    return NextResponse.json(\n      { error: 'Internal Server Error' },\n      { status: 500 }\n    );\n  }\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/api/admin/subjects/teacher/add/[...teacherId]/route.ts b/app/api/admin/subjects/teacher/add/[...teacherId]/route.ts
+--- a/app/api/admin/subjects/teacher/add/[...teacherId]/route.ts	(revision 70db818a66525ac6679143517e46bd0cb42fdb84)
++++ b/app/api/admin/subjects/teacher/add/[...teacherId]/route.ts	(date 1735847390372)
+@@ -51,11 +51,14 @@
+ 
+     const teacherObjectId = new mongoose.Types.ObjectId(teacherId[0]);
+ 
+-    const teacher: Teacher|null = await TeacherModel.findOne(teacherObjectId);
++    const teacher = await TeacherModel.updateOne(
++      { _id: teacherObjectId },
++      {  $addToSet: { subjectTeaching: {subject_name, subject_code} } }
++    );
+ 
+-    if (!teacher) {
++    if (!teacher.modifiedCount) {
+       return NextResponse.json(
+-        {error: 'Teacher not found'},
++        {error: 'Failed to update teacher'},
+         {status: 404}
+       )
+     }
+@@ -71,9 +74,6 @@
+       )
+     }
+ 
+-    teacher.subjectTeaching = [...teacher.subjectTeaching, {subject_name, subject_code}];
+-    await teacher.save();
+-
+     return NextResponse.json({status: 200});
+   } catch (error) {
+     console.error(error);
+Index: app/api/marks/[...teacherId]/route.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/api/marks/[...teacherId]/route.ts b/app/api/teacher/marks/[...teacherId]/route.ts
+rename from app/api/marks/[...teacherId]/route.ts
+rename to app/api/teacher/marks/[...teacherId]/route.ts
+--- a/app/api/marks/[...teacherId]/route.ts	(revision 70db818a66525ac6679143517e46bd0cb42fdb84)
++++ b/app/api/teacher/marks/[...teacherId]/route.ts	(date 1735804113648)
+@@ -4,10 +4,10 @@
+ import { unlink } from "fs/promises";
+ import { join } from "path";
+ import csvParser from "csv-parser";
+-import { authOptions } from "../../(auth)/auth/[...nextauth]/options";
+-import dbConnect from "../../../../lib/connectDb";
+-import { SubjectModel } from "../../../../model/User";
+-import { getAiMarks } from "../../../../lib/aiMarks";
++import { authOptions } from "../../../(auth)/auth/[...nextauth]/options";
++import dbConnect from "../../../../../lib/connectDb";
++import { SubjectModel } from "../../../../../model/User";
++import { getAiMarks } from "../../../../../lib/aiMarks";
+ 
+ interface CSVRow {
+   student_id: string;
+Index: hooks/user-model-store.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import { create } from \"zustand\";\nimport mongoose from \"mongoose\";\n\ninterface Event {\n    _id: mongoose.Types.ObjectId,\n    poster: string,\n    heading: string,\n    eventHostedBy: string,\n    description: string,\n    tags: string[],\n    eventTime: Date,\n    eventVenue: string,\n    isInterested: boolean,\n}\n\ninterface SingleEvent {\n    _id: mongoose.Types.ObjectId;\n    poster: string;\n    heading: string;\n    eventHostedBy: string;\n    description: string;\n    tags: string[];\n    eventTime: Date;\n    eventVenue: string;\n    isInterested: boolean;\n    interestedMembersArr: {\n        _id: mongoose.Types.ObjectId;\n        name: string;\n        student_id: string;\n        profile: string\n    } [];\n    eventAttachments: string[]\n}\n\ninterface SingleClub {\n    _id: mongoose.Types.ObjectId;\n    clubName: string;\n    clubLogo: string;\n    clubIdSecs: {\n        profile: string;\n        user_id:string;\n        student_id: string;\n        name: string;\n    }[];\n    clubMembers: {\n        profile: string;\n        student_id: string;\n        name: string;\n    }[];\n    clubEvents: {\n        _id: mongoose.Types.ObjectId;\n        heading: string;\n        isInterested: boolean;\n        eventTime: Date;\n        eventVenue: string\n    }[];\n}\n\ninterface Club {\n    _id: mongoose.Types.ObjectId;\n    clubName: string;\n    clubLogo: string;\n}\n\ninterface EditClub {\n    clubName: string;\n    clubLogo: string;\n    clubIdSecs: string[];\n    clubMembers: string[];\n    clubEvents: mongoose.Types.ObjectId[];\n}\n\ninterface Profile {\n    _id:mongoose.Types.ObjectId;\n    name: string;\n    student_id: string;\n    semester: number;\n    branch: string;\n    profile: string;\n    subjectMarks: {\n        subjectId: string;\n        allMarks: {\n            examType: string;\n            marks: number;\n        }[];\n    }[],\n    clubsPartOf: {\n        _id: mongoose.Types.ObjectId;\n        clubName: string;\n        clubLogo: string;\n    }[]\n}\n\ninterface Friends {\n    _id: mongoose.Types.ObjectId;\n    friends: {\n        _id: mongoose.Types.ObjectId;\n        name: string;\n        student_id: string;\n        profile: string;\n    } [];\n}\n\ninterface AddFriends {\n    _id: mongoose.Types.ObjectId;\n    name: string;\n    student_id: string;\n    profile: string;\n}\n\ninterface RequestsSent {\n    _id: mongoose.Types.ObjectId;\n    from: mongoose.Types.ObjectId;\n    to: {\n        _id: mongoose.Types.ObjectId;\n        name: string;\n        student_id: string;\n        profile: string;\n    }\n}\n\ninterface CurrentRequests {\n    _id: mongoose.Types.ObjectId;\n    to: mongoose.Types.ObjectId;\n    from: {\n        _id: mongoose.Types.ObjectId;\n        name: string;\n        student_id: string;\n        profile: string;\n    }\n}\n\ninterface Requests {\n    _id: mongoose.Types.ObjectId;\n    user: {\n        _id: mongoose.Types.ObjectId;\n        email: string;\n        username: string;\n    }\n}\n\ninterface Teacher {\n    _id: mongoose.Types.ObjectId;\n    user: {\n        email: string;\n        username: string;\n    }\n    teacher_id: string;\n    subjectTeaching: {\n        subject_code: string;\n        subject_name: string;\n    }[];\n}\n\ninterface ModelStore {\n    teachers: Teacher[]|[];\n    requests: Requests[]|[];\n    currentRequests: CurrentRequests[]|[];\n    requestsSent: RequestsSent[]|[];\n    addFriends: AddFriends[]|[];\n    friends: Friends|null;\n    editClub: EditClub|null;\n    singleClub: SingleClub|null;\n    allClubs: Club[];\n    profile: Profile|null;\n    allEvents: Event[];\n    singleEvent:SingleEvent|null;\n    isLoading: boolean;\n    setTeachers: (teachers: Teacher[]) => void;\n    setRequests: (requests: Requests[]) => void;\n    setCurrentRequests: (currentRequests: CurrentRequests[]) => void;\n    setRequestsSent: (requestsSent: RequestsSent[]) => void;\n    setAddFriends: (addFriends: AddFriends[]) => void;\n    setFriends: (friends: Friends) => void;\n    setProfile:(profile:Profile) => void;\n    setSingleClub:(club:SingleClub) => void;\n    setAllClub:(clubs:Club[])=>void;\n    setEditClub:(club:EditClub) => void;\n    setSingleEvent:(event:SingleEvent)=>void;\n    setAllEvents: (events: Event[]) => void;\n    setLoading: (loading: boolean) => void;\n}\n\nexport const useModel = create<ModelStore>((set) => ({\n    teachers: [],\n    requests: [],\n    currentRequests: [],\n    requestsSent: [],\n    addFriends: [],\n    friends: null,\n    allEvents: [],\n    singleEvent:null,\n    singleClub:null,\n    allClubs: [],\n    editClub:null,\n    profile: null,\n    isLoading: false,\n    setTeachers: ((teachers) => set({ teachers: teachers })),\n    setRequests: ((requests) => set({ requests: requests })),\n    setCurrentRequests: ((currentRequests) => set({currentRequests: currentRequests})),\n    setRequestsSent: ((requestsSent) => set({requestsSent: requestsSent})),\n    setAddFriends: ((addFriends) => set({addFriends: addFriends})),\n    setFriends: ((friends) => set({friends: friends})),\n    setProfile :((profile)=>set({profile:profile})),\n    setSingleClub:((club)=> set({singleClub:club})),\n    setAllClub:((clubs)=> set({allClubs:clubs})),\n    setEditClub:((club)=> set({editClub:club})),\n    setSingleEvent:((event)=>set({singleEvent:event})),\n    setAllEvents: (events) => set({ allEvents: events }),\n    setLoading: (loading) => set({ isLoading: loading }),\n}));\n\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/hooks/user-model-store.ts b/hooks/user-model-store.ts
+--- a/hooks/user-model-store.ts	(revision 70db818a66525ac6679143517e46bd0cb42fdb84)
++++ b/hooks/user-model-store.ts	(date 1735915222568)
+@@ -1,5 +1,6 @@
+ import { create } from "zustand";
+ import mongoose from "mongoose";
++import {string} from "zod";
+ 
+ interface Event {
+     _id: mongoose.Types.ObjectId,
+@@ -152,7 +153,28 @@
+     }[];
+ }
+ 
++interface Subjects {
++    _id: mongoose.Types.ObjectId;
++    subjectTeaching: {
++        subject_code: string;
++        subject_name: string;
++    }[];
++}
++
++interface Group {
++    _id: mongoose.Types.ObjectId;
++    groupName: string;
++}
++
++interface Student {
++    name: string;
++    student_id: string;
++}
++
+ interface ModelStore {
++    students: Student[]|[];
++    groups: Group[]|[];
++    subjects: Subjects|null;
+     teachers: Teacher[]|[];
+     requests: Requests[]|[];
+     currentRequests: CurrentRequests[]|[];
+@@ -166,6 +188,9 @@
+     allEvents: Event[];
+     singleEvent:SingleEvent|null;
+     isLoading: boolean;
++    setStudents: (students: Student[]) => void;
++    setGroups: (groups: Group[]) => void;
++    setSubjects: (subjects: Subjects) => void;
+     setTeachers: (teachers: Teacher[]) => void;
+     setRequests: (requests: Requests[]) => void;
+     setCurrentRequests: (currentRequests: CurrentRequests[]) => void;
+@@ -182,6 +207,9 @@
+ }
+ 
+ export const useModel = create<ModelStore>((set) => ({
++    students: [],
++    groups: [],
++    subjects: null,
+     teachers: [],
+     requests: [],
+     currentRequests: [],
+@@ -195,6 +223,9 @@
+     editClub:null,
+     profile: null,
+     isLoading: false,
++    setStudents: ((students) => set({students: students})),
++    setGroups: ((groups) => set({groups: groups})),
++    setSubjects: ((subjects) => set({ subjects: subjects })),
+     setTeachers: ((teachers) => set({ teachers: teachers })),
+     setRequests: ((requests) => set({ requests: requests })),
+     setCurrentRequests: ((currentRequests) => set({currentRequests: currentRequests})),
+Index: app/events/[...eventId]/page.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>'use client'\nimport {useEffect, useState} from \"react\";\nimport { useModel } from \"../../../hooks/user-model-store\";\nimport {redirect, useParams, useRouter} from \"next/navigation\";\nimport axios from \"axios\";\nimport StudentCard from \"../../../components/student/studentCard\";\nimport mongoose from \"mongoose\";\nimport DotsLoader from \"../../../components/loading/dotLoader\";\n\ninterface InterestedMembers {\n  _id: mongoose.Types.ObjectId;\n  name: string;\n  profile: string;\n  student_id: string;\n}\n\nexport default function Event() {\n  const [interested, setInterested] = useState<boolean>(false);\n  const [interestedMembers, setInterestedMembers] = useState<InterestedMembers[]>([]);\n  const router = useRouter();\n  const params = useParams();\n  const eventId = params.eventId?.[0];\n  const { singleEvent, setSingleEvent, setLoading } = useModel();\n\n  useEffect(() => {\n    if (!eventId) return;\n\n    async function fetchData() {\n      setLoading(true);\n      try {\n        const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/events/${eventId}`);\n        if (res.status === 200) {\n          setSingleEvent(res.data.data);\n          setInterested(res.data.data.isInterested);\n          setInterestedMembers(res.data.data.interestedMembersArr);\n        } else {\n          router.push(\"/\");\n        }\n      } catch (error) {\n        console.error(\"Error fetching event data:\", error);\n        router.push(\"/\");\n      } finally {\n        setLoading(false);\n      }\n    }\n\n    fetchData();\n  }, [eventId, setSingleEvent, setLoading, router]);\n\n  if (!singleEvent) {\n    return <DotsLoader />;\n  }\n  const event = singleEvent;\n  console.log(\"fe\")\n  console.log(event);\n\n  async function handleInterested() {\n    if (!event) {\n      return;\n    }\n\n    const { _id } = event;\n    try {\n      const res = await axios.patch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/events/interested/${_id.toString()}`);\n      if (res.status === 200) {\n        if (!interested) {\n          setInterestedMembers((prev) => [...prev, res.data.studentInfo]);\n        } else {\n          setInterestedMembers((prev) => prev.filter((item) => item._id.toString() !== res.data.studentInfo._id.toString()));\n        }\n\n        setInterested((prev) => !prev);\n      }\n    } catch (error) {\n      console.log(error);\n    }\n  }\n\n  if (!event) {\n    return <div>Loading...</div>; // Show loading state while data is being fetched\n  }\n\n  return (\n    <>\n      <div className=\"flex flex-col items-center w-full h-screen\">\n        <div className=\"flex flex-row items-center w-3/5 h-1/3 mt-12 justify-between \">\n          <div className=\"flex flex-col w-3/5 h-full \">\n            <div className=\"flex flex-row items-center w-full justify-between\">\n              <div className=\"text-3xl font-bold\">\n                {event?.heading}\n              </div>\n              <button\n                className={`text-lg font-bold ${\n                  !interested\n                    ? \"bg-red-600\"\n                    : \"bg-gradient-to-br from-cyan-600 to-cyan-400\"\n                } text-white w-1/3 rounded-3xl mr-4`}\n                onClick={handleInterested}\n              >\n                {interested ? \"Interested\" : \"Not Interested\"}\n              </button>\n            </div>\n            <div className=\"text-xl font-bold mt-3 mb-2\">\n              Description\n            </div>\n            <div\n              className=\"h-full w-full justify-evenly border-4 rounded-xl border-cyan-300 shadow-md shadow-cyan-300/50\">\n              {event?.description}\n            </div>\n          </div>\n          <img\n            src={event?.poster}\n            className=\"h-full w-1/3 object-fill\"\n            alt=\"\"\n          />\n        </div>\n        <div className=\"flex flex-row w-3/5 h-3/5 mt-10 justify-between\">\n          <div className=\"flex flex-col w-3/5 h-full\">\n            <div className=\"flex flex-row items-center justify-between w-full h-3/5 \">\n              <div className=\"flex flex-col w-1/2 h-3/4 text-lg font-bold pl-2 justify-around border-4 rounded-xl border-cyan-300 shadow-md shadow-cyan-300/50\">\n                <div>\n                  Venue: <span className=\"ml-2\">{event?.eventVenue}</span>\n                </div>\n                <div>\n                  Date: <span className=\"ml-2\">{new Date(event?.eventTime).toLocaleString()}</span>\n                </div>\n                <div>\n                Hosted By: <span className=\"ml-2\">{event?.eventHostedBy}</span>\n                </div>\n              </div>\n              <div className=\"flex flex-col w-1/3 h-3/4 items-center text-lg font-bold border-4 rounded-xl border-cyan-300 shadow-md shadow-cyan-300/50\">\n                <div className=\"text-xl mt-3 mb-2\">\n                  Tags\n                </div>\n                {event?.tags.map((tag) => {\n                  return <div key={tag} className=\"mt-2\">{tag}</div>\n                })}\n              </div>\n            </div>\n            <div className=\"flex flex-col w-full h-2/5 border-4 rounded-xl border-cyan-300 shadow-md shadow-cyan-300/50\">\n              <div className=\"ml-2 text-2xl font-bold\">\n                Attachments\n              </div>\n              {/*attachments */}\n            </div>\n          </div>\n          <div className=\"flex flex-col items-center w-1/3 h-full overflow-y-auto border-4 rounded-xl border-cyan-300 shadow-md shadow-cyan-300/50\">\n            <div className=\"text-2xl font-bold mt-3 mb-2\">\n              Interested People\n            </div>\n            {interestedMembers.map((member) => {\n              return <StudentCard key={member.student_id} name={member.name} student_id={member.student_id} profile={member.profile} />\n            })}\n          </div>\n        </div>\n      </div>\n    </>\n  )\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/events/[...eventId]/page.tsx b/app/events/[...eventId]/page.tsx
+--- a/app/events/[...eventId]/page.tsx	(revision 70db818a66525ac6679143517e46bd0cb42fdb84)
++++ b/app/events/[...eventId]/page.tsx	(date 1735895633331)
+@@ -50,16 +50,13 @@
+   if (!singleEvent) {
+     return <DotsLoader />;
+   }
+-  const event = singleEvent;
+-  console.log("fe")
+-  console.log(event);
+ 
+   async function handleInterested() {
+-    if (!event) {
++    if (!singleEvent) {
+       return;
+     }
+ 
+-    const { _id } = event;
++    const { _id } = singleEvent;
+     try {
+       const res = await axios.patch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/events/interested/${_id.toString()}`);
+       if (res.status === 200) {
+@@ -76,10 +73,6 @@
+     }
+   }
+ 
+-  if (!event) {
+-    return <div>Loading...</div>; // Show loading state while data is being fetched
+-  }
+-
+   return (
+     <>
+       <div className="flex flex-col items-center w-full h-screen">
+@@ -87,7 +80,7 @@
+           <div className="flex flex-col w-3/5 h-full ">
+             <div className="flex flex-row items-center w-full justify-between">
+               <div className="text-3xl font-bold">
+-                {event?.heading}
++                {singleEvent?.heading}
+               </div>
+               <button
+                 className={`text-lg font-bold ${
+@@ -105,11 +98,11 @@
+             </div>
+             <div
+               className="h-full w-full justify-evenly border-4 rounded-xl border-cyan-300 shadow-md shadow-cyan-300/50">
+-              {event?.description}
++              {singleEvent?.description}
+             </div>
+           </div>
+           <img
+-            src={event?.poster}
++            src={singleEvent?.poster}
+             className="h-full w-1/3 object-fill"
+             alt=""
+           />
+@@ -119,20 +112,20 @@
+             <div className="flex flex-row items-center justify-between w-full h-3/5 ">
+               <div className="flex flex-col w-1/2 h-3/4 text-lg font-bold pl-2 justify-around border-4 rounded-xl border-cyan-300 shadow-md shadow-cyan-300/50">
+                 <div>
+-                  Venue: <span className="ml-2">{event?.eventVenue}</span>
++                  Venue: <span className="ml-2">{singleEvent?.eventVenue}</span>
+                 </div>
+                 <div>
+-                  Date: <span className="ml-2">{new Date(event?.eventTime).toLocaleString()}</span>
++                  Date: <span className="ml-2">{new Date(singleEvent?.eventTime).toLocaleString()}</span>
+                 </div>
+                 <div>
+-                Hosted By: <span className="ml-2">{event?.eventHostedBy}</span>
++                Hosted By: <span className="ml-2">{singleEvent?.eventHostedBy}</span>
+                 </div>
+               </div>
+               <div className="flex flex-col w-1/3 h-3/4 items-center text-lg font-bold border-4 rounded-xl border-cyan-300 shadow-md shadow-cyan-300/50">
+                 <div className="text-xl mt-3 mb-2">
+                   Tags
+                 </div>
+-                {event?.tags.map((tag) => {
++                {singleEvent?.tags.map((tag) => {
+                   return <div key={tag} className="mt-2">{tag}</div>
+                 })}
+               </div>
+Index: model/User.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import { strict } from \"assert\";\nimport mongoose, { Schema, Document, Model } from \"mongoose\";\nimport { v4 as uuidv4 } from 'uuid'\nimport { string } from \"zod\";\n\nexport interface User extends Document {\n    username: string;\n    email: string;\n    password: string;\n    verifyCode: string;\n    verifyCodeExpiry: Date;\n    isVerified: boolean;\n    isStudent:boolean\n    isTeacher: boolean;\n    isAdmin: boolean;\n    reqTeacher: boolean;\n    reqAdmin: boolean;\n    sid_verification:boolean;\n}\n\nconst UserSchema: Schema<User> = new Schema({\n    username: {\n        type: String,\n        required: [true, 'username is required'],\n        unique: true,\n    },\n    email: {\n        type: String,\n        required: [true, 'email is required'],\n        unique: true,\n        match: [/^[a-zA-Z0-9._%+-]+@pec\\.edu\\.in$/, 'please use college email id'],\n    },\n    password: {\n        type: String,\n        required: [true, \"Password is required\"],\n    },\n    verifyCode: {\n        type: String,\n        required: [true, 'Verification Code is required'],\n    },\n    verifyCodeExpiry: {\n        type: Date,\n        required: [true, 'Expiry is required'],\n    },\n    isVerified: {\n        type: Boolean,\n        default: false,\n    },\n    isStudent: {\n        type: Boolean,\n        default: false,\n    },\n    isTeacher: {\n        type: Boolean,\n        default: false, // Default to false, only true if admin updates the field\n    },\n    isAdmin: {\n        type: Boolean,\n        default: false,\n    },\n    reqTeacher: {\n        type: Boolean,\n        default: false,\n    },\n    reqAdmin: {\n        type: Boolean,\n        default: false,\n    },\n    sid_verification:{\n        type:Boolean,\n        default:false,\n    }\n});\n\nUserSchema.post(\"save\", async function (this: User) {\n    if (this.isStudent) {\n        \n        try {\n            const existingStudent = await StudentModel.findOne({ user_id: this._id });\n            if (existingStudent) {\n                console.log(`Student with user_id ${this._id} already exists.`);\n                return; \n            }\n            const studentId = `S-${uuidv4()}`;\n            const newStudent = new StudentModel({\n                user_id: this._id,\n                email:this.email,\n                name: this.username,\n                student_id: studentId,\n                semester: 1,\n                branch: \"Unknown\",\n                sid_verification: this.sid_verification,\n                enrolledSubjectId: [],\n                teacherSubjectMap: {},\n                attendanceSubjectMap: {},\n                clubsPartOf: [],\n                interestedEvents: [],\n                clubsHeadOf: [],\n                profile: \"\",\n                friends: []\n            });\n\n            await newStudent.save();\n        } catch (error) {\n            console.error(\"Error creating student:\", error);\n        }\n    }\n\n    if (this.reqTeacher) {\n        try {\n            const alreadyRequested = await RequestModel.findOne({user_id: this._id})\n\n            if (alreadyRequested) {\n                console.log(\"already requested for teacher\")\n                return;\n            }\n\n            const request = new RequestModel({\n                user_id: this._id,\n                for_teacher: true,\n                for_admin: false,\n            })\n\n            await request.save();\n        } catch (error) {\n            console.error(\"Error making request for teacher:\", error);\n        }\n    }\n\n    if (this.reqAdmin) {\n        try {\n            const alreadyRequested = await RequestModel.findOne({user_id: this._id})\n\n            if (alreadyRequested) {\n                console.log(\"already requested for admin\")\n                return;\n            }\n\n            const request = new RequestModel({\n                user_id: this._id,\n                for_teacher: false,\n                for_admin: true,\n            })\n\n            await request.save();\n        } catch (error) {\n            console.error(\"Error making request for admin:\", error);\n        }\n    }\n});\n\n\nexport interface Student extends Document {\n    user_id: mongoose.Schema.Types.ObjectId;\n    email?:string;\n    name?:string;\n    student_id?: string;\n    semester: number;\n    phoneNumber?: number;\n    branch: string;\n    sid_verification: boolean;\n    enrolledSubjectId: string[];\n    subjectTeacherMap: Record<string, mongoose.Schema.Types.ObjectId>;\n    attendanceSubjectMap: Record<number, string>;\n    clubsPartOf: mongoose.Schema.Types.ObjectId[];\n    interestedEvents: mongoose.Schema.Types.ObjectId[];\n    clubsHeadOf: mongoose.Schema.Types.ObjectId[];\n    profile?: string;\n    friends: mongoose.Schema.Types.ObjectId[];\n}\n\n\nconst StudentSchema: Schema<Student> = new Schema({\n    user_id: {\n        type: Schema.Types.ObjectId,\n        ref: \"User\",\n        required: true,\n    },\n    email:{\n        type:String,required:false\n    },\n    name: { type: String, required: true },\n    student_id: { type: String, unique: true },\n    semester: { type: Number, required: true },\n    phoneNumber: { type: Number },\n    branch: { type: String, required: true },\n    sid_verification: { type: Boolean, default: false },\n    enrolledSubjectId: [{ type: String }],\n    subjectTeacherMap: {\n        type: Map,\n        of: Schema.Types.ObjectId,\n    },\n    attendanceSubjectMap: {\n        type: Map,\n        of: String,\n    },\n    clubsPartOf: [{ type: Schema.Types.ObjectId, ref: \"Club\" }],\n    interestedEvents: [{ type: Schema.Types.ObjectId, ref: \"Event\" }],\n    clubsHeadOf: [{ type: Schema.Types.ObjectId, ref: \"Club\" }],\n    profile: {\n        type: String,\n        required: false,\n    },\n    friends: [{ type: Schema.Types.ObjectId, ref: \"Student\" }],\n});\n\n\nexport interface Teacher extends Document {\n    user_id: mongoose.Schema.Types.ObjectId;\n    teacher_id: string;\n    subjectTeaching: {\n        subject_code: string;\n        subject_name: string;\n    }[];\n}\n\nconst TeacherSchema: Schema<Teacher> = new Schema({\n    user_id: {\n        type: Schema.Types.ObjectId,\n        ref: \"User\",\n        required: true,\n    },\n    teacher_id: { type: String, required: true, unique: true },\n    subjectTeaching: [{ type: String }],\n});\n\nexport interface Club extends Document {\n    clubName: string;\n    clubLogo?: string;\n    clubIdSecs: string[];\n    clubMembers: string[];\n    clubEvents: mongoose.Schema.Types.ObjectId[];\n}\n\nconst ClubSchema: Schema<Club> = new Schema({\n    clubName: { type: String, required: true, unique: true },\n    clubLogo: { type: String },\n    clubIdSecs: [{ type: String, ref: \"Student\" }],\n    clubMembers: [{ type: String, ref: \"Student\" }],\n    clubEvents: [{ type: Schema.Types.ObjectId, ref: \"Event\" }],\n});\nexport interface Event extends Document {\n    eventHostedBy: mongoose.Schema.Types.ObjectId;\n    eventVenue: string;\n    eventTime: Date;\n    interestedMembersArr: mongoose.Schema.Types.ObjectId[];\n    eventAttachments?: string[];\n    poster: string;\n    heading: string;\n    description: string;\n    tags: string[];\n}\n\nconst EventSchema: Schema<Event> = new Schema({\n    eventHostedBy: {\n        type: Schema.Types.ObjectId,\n        ref:\"Club\"\n    },\n    eventVenue: { type: String, required: true },\n    eventTime: { type: Date, required: true },\n    interestedMembersArr: [{ type: Schema.Types.ObjectId, ref: \"Student\" }],\n    eventAttachments: [{ type: String }],\n    poster: { type: String, required: true },\n    heading: { type: String, required: true },\n    description: { type: String, required: true },\n    tags: [{ type: String }],\n});\n\n\n\nexport interface Subject extends Document {\n  subjectId: string;\n  allMarks: {\n    examType: string;\n    studentMarks: {\n      student_id: string;\n      marks: number;\n    }[];\n  }[];\n}\n\nconst SubjectSchema: Schema<Subject> = new Schema({\n    subjectId: { type: String, required: true },\n    allMarks: {\n      type: [\n        {\n          examType: { type: String, required: true },\n          studentMarks: [\n            {\n              student_id: { type: String, required: true },\n              marks: { type: Number, required: true },\n            },\n          ],\n        },\n      ],\n      default: [],\n    },\n  });\n\n\n\nexport interface Attendance extends Document {\n    subjectId: string;\n    teacherAttId: mongoose.Schema.Types.ObjectId;\n    totalClasses: number;\n    dateStudentMap: {\n        date: Date;\n        studentPresent: number;\n    }[];\n    code: number;\n}\n\nconst AttendanceSchema: Schema<Attendance> = new Schema({\n    subjectId: { type: String, required: true },\n    teacherAttId: { type: Schema.Types.ObjectId, ref: \"Teacher\"},\n    totalClasses: { type: Number, required: true },\n    dateStudentMap: [{\n        date: { type: Date, required: true },\n        studentPresent: [{ type: Number }],\n    }],\n    code: { type: Number},\n});\n\n\n\nexport interface Request extends Document {\n    user_id: mongoose.Schema.Types.ObjectId;\n    for_teacher: boolean;\n    for_admin: boolean;\n}\n\nconst RequestSchema: Schema<Request> = new Schema({\n    user_id: {type: Schema.Types.ObjectId, ref: \"User\" },\n    for_teacher: {type: \"boolean\", default: false},\n    for_admin: {type: \"boolean\", default: false},\n})\n\n\n\nexport interface FriendRequest extends Document {\n    from: mongoose.Schema.Types.ObjectId;\n    to: mongoose.Schema.Types.ObjectId;\n}\n\nconst FriendRequestSchema: Schema<FriendRequest> = new Schema({\n    from: {type: Schema.Types.ObjectId, ref: \"Student\" },\n    to: {type: Schema.Types.ObjectId, ref: \"Student\" },\n})\n\ninterface Eventai {\n    title: string;\n    description: string;\n}\n\ninterface Markai {\n    subject: string;\n    marks: string;\n}\n\ninterface Generalai {\n    title: string;\n    description: string;\n}\n\ninterface Info {\n    events?: Eventai[];\n    marks?: Markai[];\n    general?: Generalai[];\n}\n\nexport interface AiChatBot extends Document {\n    Info: Info;\n}\n\nconst EventSchemaAI = new Schema<Eventai>({\n    title: { type: String, required: true },\n    description: { type: String, required: true },\n});\n\nconst MarkSchemaAI = new Schema<Markai>({\n    subject: { type: String, required: true },\n    marks: { type: String, required: true },\n});\n\nconst GeneralSchemaAI = new Schema<Generalai>({\n    title: { type: String, required: true },\n    description: { type: String, required: true },\n});\n\nconst AiChatBotSchema: Schema<AiChatBot> = new Schema({\n    Info: {\n        events: [EventSchemaAI],\n        marks: [MarkSchemaAI],\n        general: [GeneralSchemaAI],\n    }},\n    { collection: 'aiChatBot' }\n);\n\nconst aiChatBotModel: Model<AiChatBot> =\n    mongoose.models.aiChatBot || mongoose.model<AiChatBot>(\"aiChatBot\", AiChatBotSchema);\n\nconst UserModel: Model<User> =\n    mongoose.models.User || mongoose.model<User>(\"User\", UserSchema);\n\nconst StudentModel: Model<Student> =\n    mongoose.models.Student || mongoose.model<Student>(\"Student\", StudentSchema);\n\nconst TeacherModel: Model<Teacher> =\n    mongoose.models.Teacher || mongoose.model<Teacher>(\"Teacher\", TeacherSchema);\n\nconst ClubModel: Model<Club> =\n    mongoose.models.Club|| mongoose.model<Club>(\"Club\", ClubSchema);\n\nconst EventModel: Model<Event> =\n    mongoose.models.Event || mongoose.model<Event>(\"Event\", EventSchema);\n\nconst SubjectModel : Model<Subject>=\n    mongoose.models.Subject || mongoose.model<Subject>(\"Subject\",SubjectSchema);\n\nconst AttendanceModel: Model<Attendance> =\n    mongoose.models.Attendance || mongoose.model<Attendance>(\"Attendance\", AttendanceSchema);\n\nconst RequestModel: Model<Request> =\n    mongoose.models.Request || mongoose.model<Request>(\"Request\", RequestSchema);\n\nconst FriendRequestModel: Model<FriendRequest> =\n    mongoose.models.FriendRequest || mongoose.model<FriendRequest>(\"FriendRequest\", FriendRequestSchema);\n\nexport {\n    UserModel,\n    StudentModel,\n    TeacherModel,\n    ClubModel,\n    EventModel,\n    SubjectModel,\n    AttendanceModel,\n    RequestModel,\n    FriendRequestModel,\n    aiChatBotModel\n};\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/model/User.ts b/model/User.ts
+--- a/model/User.ts	(revision 70db818a66525ac6679143517e46bd0cb42fdb84)
++++ b/model/User.ts	(date 1735892887913)
+@@ -221,7 +221,12 @@
+         required: true,
+     },
+     teacher_id: { type: String, required: true, unique: true },
+-    subjectTeaching: [{ type: String }],
++    subjectTeaching: [
++        {
++            subject_name: { type: String, required: true },
++            subject_code: { type: String, required: true },
++        },
++    ]
+ });
+ 
+ export interface Club extends Document {
+@@ -301,24 +306,24 @@
+ 
+ export interface Attendance extends Document {
+     subjectId: string;
+-    teacherAttId: mongoose.Schema.Types.ObjectId;
++    teacherId: mongoose.Schema.Types.ObjectId;
+     totalClasses: number;
+     dateStudentMap: {
+         date: Date;
+-        studentPresent: number;
++        studentPresent: number[];
+     }[];
+-    code: number;
++    groupName: string;
+ }
+ 
+ const AttendanceSchema: Schema<Attendance> = new Schema({
+     subjectId: { type: String, required: true },
+-    teacherAttId: { type: Schema.Types.ObjectId, ref: "Teacher"},
++    teacherId: { type: Schema.Types.ObjectId, ref: "Teacher", required: true }, // teacher ki user id
+     totalClasses: { type: Number, required: true },
+     dateStudentMap: [{
+         date: { type: Date, required: true },
+         studentPresent: [{ type: Number }],
+     }],
+-    code: { type: Number},
++    groupName: { type: String, required: true },
+ });
+ 
+ 
+Index: app/api/attendance/[teacherId]/[...subjectId]/route.ts
+===================================================================
+diff --git a/app/api/attendance/[teacherId]/[...subjectId]/route.ts b/app/api/attendance/[teacherId]/[...subjectId]/route.ts
+deleted file mode 100644
+--- a/app/api/attendance/[teacherId]/[...subjectId]/route.ts	(revision 70db818a66525ac6679143517e46bd0cb42fdb84)
++++ /dev/null	(revision 70db818a66525ac6679143517e46bd0cb42fdb84)
+@@ -1,10 +0,0 @@
+-import dbConnect from "../../../../../lib/connectDb";
+-import { authOptions } from "../../../(auth)/auth/[...nextauth]/options";
+-import { NextResponse } from "next/server";
+-import { getServerSession } from "next-auth";
+-import { StudentModel } from "../../../../../model/User";
+-import mongoose from "mongoose";
+-
+-export async function GET(request: Request) {
+-////// Yahan Get likhna hai pura
+-}
+\ No newline at end of file
+Index: .idea/shelf/Uncommitted_changes_before_Update_at_12_27_24,_11_51 AM_[Changes]/shelved.patch
+===================================================================
+diff --git a/.idea/shelf/Uncommitted_changes_before_Update_at_12_27_24,_11_51 AM_[Changes]/shelved.patch b/.idea/shelf/Uncommitted_changes_before_Update_at_12_27_24,_11_51 AM_[Changes]/shelved.patch
+deleted file mode 100644
+--- a/.idea/shelf/Uncommitted_changes_before_Update_at_12_27_24,_11_51 AM_[Changes]/shelved.patch	(revision 70db818a66525ac6679143517e46bd0cb42fdb84)
++++ /dev/null	(revision 70db818a66525ac6679143517e46bd0cb42fdb84)
+@@ -1,128 +0,0 @@
+-Index: app/api/admin/add-club/route.ts
+-IDEA additional info:
+-Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+-<+>import {NextRequest, NextResponse} from \"next/server\";\nimport dbConnect from \"../../../../lib/connectDb\";\nimport {getServerSession, User} from \"next-auth\";\nimport {authOptions} from \"../../(auth)/auth/[...nextauth]/options\";\nimport mongoose from \"mongoose\";\nimport {ClubModel} from \"../../../../model/User\";\n\nexport async function POST(req: NextRequest) {\n  try {\n    await dbConnect();\n\n    const session = await getServerSession(authOptions);\n    const user: User = session?.user as User;\n\n    if (!session || !user) {\n      return NextResponse.json({ error: 'Unauthorized. User must be logged in.' }, { status: 401 });\n    }\n\n    const {clubName, clubLogo, clubIdSecs, clubMembers} = await req.json();\n\n    if (!clubName) {\n      return NextResponse.json(\n        { error: 'ClubName is required' },\n        { status: 403 }\n      );\n    }\n\n    const club = await ClubModel.create({\n      clubName,\n      clubLogo,\n      clubIdSecs,\n      clubMembers,\n      clubEvents: []\n    })\n\n    if (!club) {\n      return NextResponse.json(\n        { error: 'Failed to create club' },\n        { status: 500 }\n      );\n    }\n\n    return NextResponse.json(club, {status: 200});\n\n  } catch (error) {\n    console.error(error);\n    return NextResponse.json(\n      { error: 'Internal Server Error' },\n      { status: 500 }\n    );\n  }\n}
+-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+-<+>UTF-8
+-===================================================================
+-diff --git a/app/api/admin/add-club/route.ts b/app/api/admin/add-club/route.ts
+---- a/app/api/admin/add-club/route.ts	(revision 819f3eab511f0670d3b946d5d425b10c53399ced)
+-+++ b/app/api/admin/add-club/route.ts	(date 1735242410594)
+-@@ -16,6 +16,13 @@
+-       return NextResponse.json({ error: 'Unauthorized. User must be logged in.' }, { status: 401 });
+-     }
+- 
+-+    // if (!user.isAdmin) {
+-+    //   return NextResponse.json(
+-+    //     { error: 'User is not admin' },
+-+    //     { status: 401 }
+-+    //   );
+-+    // }
+-+
+-     const {clubName, clubLogo, clubIdSecs, clubMembers} = await req.json();
+- 
+-     if (!clubName) {
+-Index: .idea/workspace.xml
+-IDEA additional info:
+-Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+-<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"AutoImportSettings\">\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\n  </component>\n  <component name=\"ChangeListManager\">\n    <list default=\"true\" id=\"3d45d623-ee8a-421e-8d0d-07f88c3fd10c\" name=\"Changes\" comment=\"fixup! recovered files\">\n      <change afterPath=\"$PROJECT_DIR$/app/admin/add-club/page.tsx\" afterDir=\"false\" />\n      <change afterPath=\"$PROJECT_DIR$/app/api/admin/add-club/route.ts\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/.idea/workspace.xml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/.idea/workspace.xml\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/app/api/clubs/[...clubId]/route.ts\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/app/api/clubs/[...clubId]/route.ts\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/app/api/events/add-event/route.ts\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/app/api/events/add-event/route.ts\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/app/clubs/[...clubId]/page.tsx\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/app/clubs/[...clubId]/page.tsx\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/app/clubs/page.tsx\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/app/clubs/page.tsx\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/model/User.ts\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/model/User.ts\" afterDir=\"false\" />\n    </list>\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\n  </component>\n  <component name=\"FileTemplateManagerImpl\">\n    <option name=\"RECENT_TEMPLATES\">\n      <list>\n        <option value=\"TypeScript JSX File\" />\n        <option value=\"TypeScript File\" />\n      </list>\n    </option>\n  </component>\n  <component name=\"Git.Settings\">\n    <option name=\"RECENT_BRANCH_BY_REPOSITORY\">\n      <map>\n        <entry key=\"$PROJECT_DIR$\" value=\"css-testing\" />\n      </map>\n    </option>\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\n    <option name=\"RESET_MODE\" value=\"MIXED\" />\n  </component>\n  <component name=\"GitHubPullRequestSearchHistory\">{\n  &quot;lastFilter&quot;: {\n    &quot;state&quot;: &quot;OPEN&quot;,\n    &quot;assignee&quot;: &quot;VaibhavVerma27&quot;\n  }\n}</component>\n  <component name=\"GithubPullRequestsUISettings\">{\n  &quot;selectedUrlAndAccountId&quot;: {\n    &quot;url&quot;: &quot;https://github.com/VaibhavVerma27/Ideathon.git&quot;,\n    &quot;accountId&quot;: &quot;2d85c29d-bd34-4650-83c7-ed5abaf2838e&quot;\n  }\n}</component>\n  <component name=\"ProblemsViewState\">\n    <option name=\"selectedTabId\" value=\"CurrentFile\" />\n  </component>\n  <component name=\"ProjectColorInfo\">{\n  &quot;associatedIndex&quot;: 5\n}</component>\n  <component name=\"ProjectId\" id=\"2pwcVN5jNvv3r7ErnbxxbDHxjE8\" />\n  <component name=\"ProjectViewState\">\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\n    <option name=\"showLibraryContents\" value=\"true\" />\n  </component>\n  <component name=\"PropertiesComponent\">{\n  &quot;keyToString&quot;: {\n    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,\n    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,\n    &quot;git-widget-placeholder&quot;: &quot;main&quot;,\n    &quot;last_opened_file_path&quot;: &quot;/home/vaibhav-verma/WebstormProjects/week-16-1&quot;,\n    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,\n    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,\n    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,\n    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,\n    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,\n    &quot;ts.external.directory.path&quot;: &quot;/home/vaibhav-verma/WebstormProjects/ideathon/node_modules/typescript/lib&quot;,\n    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;\n  }\n}</component>\n  <component name=\"RecentsManager\">\n    <key name=\"MoveFile.RECENT_KEYS\">\n      <recent name=\"$PROJECT_DIR$/components/club\" />\n    </key>\n  </component>\n  <component name=\"SharedIndexes\">\n    <attachedChunks>\n      <set>\n        <option value=\"bundled-js-predefined-d6986cc7102b-deb605915726-JavaScript-WS-243.22562.222\" />\n      </set>\n    </attachedChunks>\n  </component>\n  <component name=\"SpellCheckerSettings\" RuntimeDictionaries=\"0\" Folders=\"0\" CustomDictionaries=\"0\" DefaultDictionary=\"application-level\" UseSingleDictionary=\"true\" transferred=\"true\" />\n  <component name=\"TaskManager\">\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\n      <changelist id=\"3d45d623-ee8a-421e-8d0d-07f88c3fd10c\" name=\"Changes\" comment=\"\" />\n      <created>1733680600234</created>\n      <option name=\"number\" value=\"Default\" />\n      <option name=\"presentableId\" value=\"Default\" />\n      <updated>1733680600234</updated>\n      <workItem from=\"1733680601320\" duration=\"285000\" />\n      <workItem from=\"1733724675594\" duration=\"611000\" />\n      <workItem from=\"1733822080765\" duration=\"1111000\" />\n      <workItem from=\"1733835011657\" duration=\"6379000\" />\n      <workItem from=\"1733847978381\" duration=\"5516000\" />\n      <workItem from=\"1733894701134\" duration=\"9865000\" />\n      <workItem from=\"1733925499497\" duration=\"1606000\" />\n      <workItem from=\"1733928369051\" duration=\"251000\" />\n      <workItem from=\"1733928630064\" duration=\"4368000\" />\n      <workItem from=\"1733980473805\" duration=\"1457000\" />\n      <workItem from=\"1734070775491\" duration=\"813000\" />\n      <workItem from=\"1734085817459\" duration=\"30000\" />\n      <workItem from=\"1734183280596\" duration=\"5230000\" />\n      <workItem from=\"1734189002399\" duration=\"3292000\" />\n      <workItem from=\"1734192305926\" duration=\"2303000\" />\n      <workItem from=\"1734194762220\" duration=\"86000\" />\n      <workItem from=\"1734199075722\" duration=\"1951000\" />\n      <workItem from=\"1734202864084\" duration=\"690000\" />\n      <workItem from=\"1734243660946\" duration=\"163000\" />\n      <workItem from=\"1734247462466\" duration=\"601000\" />\n      <workItem from=\"1734274484596\" duration=\"221000\" />\n      <workItem from=\"1734285025230\" duration=\"756000\" />\n      <workItem from=\"1734342119399\" duration=\"12152000\" />\n      <workItem from=\"1734415130463\" duration=\"154000\" />\n      <workItem from=\"1734451510425\" duration=\"1022000\" />\n      <workItem from=\"1734515159954\" duration=\"1302000\" />\n      <workItem from=\"1734587553335\" duration=\"2223000\" />\n      <workItem from=\"1734622604490\" duration=\"6450000\" />\n      <workItem from=\"1734672636682\" duration=\"3862000\" />\n      <workItem from=\"1734697995805\" duration=\"4210000\" />\n      <workItem from=\"1734709695437\" duration=\"1288000\" />\n      <workItem from=\"1734719253317\" duration=\"6275000\" />\n      <workItem from=\"1734766424331\" duration=\"15352000\" />\n      <workItem from=\"1734859762039\" duration=\"16109000\" />\n      <workItem from=\"1734888157235\" duration=\"1752000\" />\n      <workItem from=\"1734936981008\" duration=\"20081000\" />\n      <workItem from=\"1735026512179\" duration=\"9324000\" />\n      <workItem from=\"1735048088338\" duration=\"5248000\" />\n      <workItem from=\"1735060156138\" duration=\"2618000\" />\n      <workItem from=\"1735064720771\" duration=\"656000\" />\n      <workItem from=\"1735106418820\" duration=\"148000\" />\n      <workItem from=\"1735141420059\" duration=\"11523000\" />\n      <workItem from=\"1735194562583\" duration=\"6771000\" />\n      <workItem from=\"1735224189800\" duration=\"6488000\" />\n    </task>\n    <servers />\n  </component>\n  <component name=\"TypeScriptGeneratedFilesManager\">\n    <option name=\"version\" value=\"3\" />\n    <option name=\"exactExcludedFiles\">\n      <list>\n        <option value=\"$PROJECT_DIR$/next.config.mjs\" />\n        <option value=\"$PROJECT_DIR$/next.config.mjs\" />\n      </list>\n    </option>\n  </component>\n  <component name=\"Vcs.Log.Tabs.Properties\">\n    <option name=\"TAB_STATES\">\n      <map>\n        <entry key=\"MAIN\">\n          <value>\n            <State>\n              <option name=\"FILTERS\">\n                <map>\n                  <entry key=\"branch\">\n                    <value>\n                      <list>\n                        <option value=\"main\" />\n                      </list>\n                    </value>\n                  </entry>\n                </map>\n              </option>\n            </State>\n          </value>\n        </entry>\n      </map>\n    </option>\n  </component>\n  <component name=\"VcsManagerConfiguration\">\n    <MESSAGE value=\"fixup! recovered files\" />\n    <option name=\"LAST_COMMIT_MESSAGE\" value=\"fixup! recovered files\" />\n  </component>\n</project>
+-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+-<+>UTF-8
+-===================================================================
+-diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+---- a/.idea/workspace.xml	(revision 819f3eab511f0670d3b946d5d425b10c53399ced)
+-+++ b/.idea/workspace.xml	(date 1735280492123)
+-@@ -5,14 +5,9 @@
+-   </component>
+-   <component name="ChangeListManager">
+-     <list default="true" id="3d45d623-ee8a-421e-8d0d-07f88c3fd10c" name="Changes" comment="fixup! recovered files">
+--      <change afterPath="$PROJECT_DIR$/app/admin/add-club/page.tsx" afterDir="false" />
+--      <change afterPath="$PROJECT_DIR$/app/api/admin/add-club/route.ts" afterDir="false" />
+-+      <change afterPath="$PROJECT_DIR$/app/api/admin/edit-club/[...clubId]/route.ts" afterDir="false" />
+-       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+--      <change beforePath="$PROJECT_DIR$/app/api/clubs/[...clubId]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/clubs/[...clubId]/route.ts" afterDir="false" />
+--      <change beforePath="$PROJECT_DIR$/app/api/events/add-event/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/events/add-event/route.ts" afterDir="false" />
+--      <change beforePath="$PROJECT_DIR$/app/clubs/[...clubId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/clubs/[...clubId]/page.tsx" afterDir="false" />
+--      <change beforePath="$PROJECT_DIR$/app/clubs/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/clubs/page.tsx" afterDir="false" />
+--      <change beforePath="$PROJECT_DIR$/model/User.ts" beforeDir="false" afterPath="$PROJECT_DIR$/model/User.ts" afterDir="false" />
+-+      <change beforePath="$PROJECT_DIR$/app/api/admin/add-club/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/admin/add-club/route.ts" afterDir="false" />
+-     </list>
+-     <option name="SHOW_DIALOG" value="false" />
+-     <option name="HIGHLIGHT_CONFLICTS" value="true" />
+-@@ -137,7 +132,8 @@
+-       <workItem from="1735106418820" duration="148000" />
+-       <workItem from="1735141420059" duration="11523000" />
+-       <workItem from="1735194562583" duration="6771000" />
+--      <workItem from="1735224189800" duration="6488000" />
+-+      <workItem from="1735224189800" duration="10335000" />
+-+      <workItem from="1735280126356" duration="365000" />
+-     </task>
+-     <servers />
+-   </component>
+-Index: app/api/admin/edit-club/[...clubId]/route.ts
+-IDEA additional info:
+-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+-<+>UTF-8
+-===================================================================
+-diff --git a/app/api/admin/edit-club/[...clubId]/route.ts b/app/api/admin/edit-club/[...clubId]/route.ts
+-new file mode 100644
+---- /dev/null	(date 1735280492019)
+-+++ b/app/api/admin/edit-club/[...clubId]/route.ts	(date 1735280492019)
+-@@ -0,0 +1,56 @@
+-+import {NextRequest, NextResponse} from "next/server";
+-+import dbConnect from "../../../../../lib/connectDb";
+-+import {getServerSession, User} from "next-auth";
+-+import {authOptions} from "../../../(auth)/auth/[...nextauth]/options";
+-+import mongoose from "mongoose";
+-+import {ClubModel} from "../../../../../model/User";
+-+
+-+export async function PATCH(req: NextRequest,     { params }: { params: { clubId: string[] } }) {
+-+  try {
+-+    await dbConnect();
+-+
+-+    const session = await getServerSession(authOptions);
+-+    const user: User = session?.user as User;
+-+
+-+    if (!session || !user) {
+-+      return NextResponse.json({ error: 'Unauthorized. User must be logged in.' }, { status: 401 });
+-+    }
+-+
+-+    // if (!user.isAdmin) {
+-+    //   return NextResponse.json(
+-+    //     { error: 'User is not admin' },
+-+    //     { status: 401 }
+-+    //   );
+-+    // }
+-+
+-+    const { clubId } = await params;
+-+
+-+    if (!clubId.length) {
+-+      return NextResponse.json(
+-+        {error: 'Club ID is required'},
+-+        {status: 403}
+-+      )
+-+    }
+-+
+-+    console.log(clubId);
+-+
+-+    if (!mongoose.Types.ObjectId.isValid(clubId[0])) {
+-+      return NextResponse.json(
+-+        {error: 'Club ID is invalid'},
+-+        {status: 403}
+-+      )
+-+    }
+-+
+-+    const clubObjectId = new mongoose.Types.ObjectId(clubId[0])
+-+
+-+    const updatedClub = await ClubModel.updateOne({_id: clubObjectId}, );
+-+
+-+
+-+  } catch (error) {
+-+    console.error(error);
+-+    return NextResponse.json(
+-+      { error: 'Internal Server Error' },
+-+      { status: 500 }
+-+    );
+-+  }
+-+}
+-\ No newline at end of file
+Index: .idea/shelf/Uncommitted_changes_before_Update_at_12_27_24__11_51AM__Changes_.xml
+===================================================================
+diff --git a/.idea/shelf/Uncommitted_changes_before_Update_at_12_27_24__11_51AM__Changes_.xml b/.idea/shelf/Uncommitted_changes_before_Update_at_12_27_24__11_51AM__Changes_.xml
+deleted file mode 100644
+--- a/.idea/shelf/Uncommitted_changes_before_Update_at_12_27_24__11_51AM__Changes_.xml	(revision 70db818a66525ac6679143517e46bd0cb42fdb84)
++++ /dev/null	(revision 70db818a66525ac6679143517e46bd0cb42fdb84)
+@@ -1,4 +0,0 @@
+-<changelist name="Uncommitted_changes_before_Update_at_12_27_24,_11_51 AM_[Changes]" date="1735280495232" recycled="true" deleted="true">
+-  <option name="PATH" value="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_12_27_24,_11_51 AM_[Changes]/shelved.patch" />
+-  <option name="DESCRIPTION" value="Uncommitted changes before Update at 12/27/24, 11:51 AM [Changes]" />
+-</changelist>
+\ No newline at end of file
+Index: app/api/attendance/confirmButton/route.ts
+===================================================================
+diff --git a/app/api/attendance/confirmButton/route.ts b/app/api/attendance/confirmButton/route.ts
+deleted file mode 100644
+--- a/app/api/attendance/confirmButton/route.ts	(revision 70db818a66525ac6679143517e46bd0cb42fdb84)
++++ /dev/null	(revision 70db818a66525ac6679143517e46bd0cb42fdb84)
+@@ -1,82 +0,0 @@
+-import dbConnect from "../../../../lib/connectDb";
+-import { authOptions } from "../../(auth)/auth/[...nextauth]/options";
+-import mongoose from "mongoose";
+-import { NextResponse } from "next/server";
+-import { getServerSession, User } from "next-auth";
+-import { StudentModel, AttendanceModel, TeacherModel, Student } from "../../../../model/User";
+-
+-export async function PATCH(request: Request) {
+-    await dbConnect();
+-    const session = await getServerSession(authOptions);
+-    const user: User = session?.user as User;
+-
+-    if (!session || !user) {
+-        return NextResponse.json({ error: 'Unauthorized. User must be logged in.' }, { status: 401 });
+-    }
+-
+-    const userId = new mongoose.Types.ObjectId(user._id);
+-
+-    const student: Student | null = await StudentModel.findOne({ user_id: userId });
+-
+-    if (!student) {
+-        return new Response(
+-            JSON.stringify({ success: false, message: 'Student not found' }),
+-            { status: 400, headers: { 'Content-Type': 'application/json' } }
+-        );
+-    }
+-
+-    const requestBody = await request.json();
+-    const urlParts = request.url.split('/');
+-    const teacherId = urlParts[urlParts.length - 2];
+-    const subjectId = urlParts[urlParts.length - 1];
+-
+-    if (!teacherId) {
+-        return new Response(
+-            JSON.stringify({ success: false, message: 'Teacher ID is null' }),
+-            { status: 400, headers: { 'Content-Type': 'application/json' } }
+-        );
+-    }
+-
+-    if (!requestBody) {
+-        return new Response(
+-            JSON.stringify({ success: false, message: 'Request body is null' }),
+-            { status: 400, headers: { 'Content-Type': 'application/json' } }
+-        );
+-    }
+-
+-    const attendanceMap = requestBody.attendanceMap;
+-
+-    const attendance = await AttendanceModel.findOne({ 
+-        subjectId: new RegExp(`^${subjectId}$`, 'i'),
+-        teacherId: teacherId
+-    });
+-
+-    if (!attendance) {
+-        return new Response(
+-            JSON.stringify({ success: false, message: 'Attendance not found' }),
+-            { status: 400, headers: { 'Content-Type': 'application/json' } }
+-        );
+-    }
+-
+-    const { Date: date, studentsPresent } = attendanceMap;
+-
+-    const existingDateEntry = attendance.dateStudentMap.find(entry => entry.date.toISOString() === new Date(date).toISOString());
+-
+-    console.log('studentsPresent:', studentsPresent);
+-    if (existingDateEntry) {
+-        existingDateEntry.studentPresent = studentsPresent;
+-    } else {
+-        attendance.dateStudentMap.push({
+-            date: new Date(date),
+-            studentPresent: studentsPresent
+-        });
+-    }
+-    attendance.totalClasses += 1;
+-
+-    await attendance.save();
+-
+-    return new Response(
+-        JSON.stringify({ success: true, message: 'Attendance updated successfully' }),
+-        { status: 200, headers: { 'Content-Type': 'application/json' } }
+-    );
+-}
+Index: app/teacher/subjects/page.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/teacher/subjects/page.tsx b/app/teacher/subjects/page.tsx
+new file mode 100644
+--- /dev/null	(date 1735893408416)
++++ b/app/teacher/subjects/page.tsx	(date 1735893408416)
+@@ -0,0 +1,88 @@
++"use client"
++
++import {useModel} from "../../../hooks/user-model-store";
++import {useRouter} from "next/navigation";
++import {useEffect} from "react";
++import axios from "axios";
++import DotsLoader from "../../../components/loading/dotLoader";
++
++export default function SubjectsPage() {
++  const { subjects, setSubjects, setLoading } = useModel();
++  const router = useRouter();
++
++  useEffect(() => {
++    async function fetchData() {
++      setLoading(true);
++      try {
++        const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/teacher/subjects`);
++        if (res.status === 200) {
++          setSubjects(res.data);
++        } else {
++          router.push("/");
++        }
++      } catch (error) {
++        console.error("Error fetching data:", error);
++        router.push("/");
++      } finally {
++        setLoading(false);
++      }
++    }
++
++    fetchData();
++  }, [router, setSubjects, setLoading]);
++
++  if (!subjects) {
++    return <DotsLoader />;
++  }
++
++  if (subjects.subjectTeaching.length === 0) {
++    return (
++      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black text-white flex items-center justify-center">
++        <div className="text-gray-400 text-lg">
++          No subjects found. Please add some subjects!
++        </div>
++      </div>
++    );
++  }
++
++  return (
++    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black text-white">
++      {/* Page Header */}
++      <div className="w-full py-10 bg-gray-950 shadow-lg">
++        <h1 className="text-3xl font-extrabold text-center text-blue-500 tracking-wide">
++          Your Subjects
++        </h1>
++      </div>
++
++      {/* Subjects List */}
++      <div className="flex flex-col items-center mt-10 px-4">
++        <div className="w-full max-w-5xl max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
++          {subjects.subjectTeaching.map((subject) => (
++            <div
++              key={subject.subject_code}
++              className="flex flex-col md:flex-row w-full bg-gray-800 rounded-lg shadow-xl items-center justify-between p-6 my-4 hover:scale-105 transform transition-transform duration-300"
++            >
++              {/* Subject Info */}
++              <div className="text-lg font-semibold text-white">
++                {subject.subject_code}
++              </div>
++
++              {/* Action Buttons */}
++              <div className="flex space-x-4 mt-4 md:mt-0">
++                <button
++                  className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-semibold shadow-lg transition-all duration-300"
++                  onClick={()=> router.push(`/teacher/subjects/groups/${subject.subject_code}`)}
++                >
++                  Take Attendance
++                </button>
++                <button className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-semibold shadow-lg transition-all duration-300">
++                  Upload Resources
++                </button>
++              </div>
++            </div>
++          ))}
++        </div>
++      </div>
++    </div>
++  );
++}
+\ No newline at end of file
+Index: app/api/teacher/subjects/attendance/[...subjectId]/route.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/api/teacher/subjects/attendance/[...subjectId]/route.ts b/app/api/teacher/subjects/attendance/[...subjectId]/route.ts
+new file mode 100644
+--- /dev/null	(date 1735915222557)
++++ b/app/api/teacher/subjects/attendance/[...subjectId]/route.ts	(date 1735915222557)
+@@ -0,0 +1,66 @@
++//get the students enrolled in subject in get and mark subjects in patch
++
++import dbConnect from "../../../../../../lib/connectDb";
++import {getServerSession, User} from "next-auth";
++import {authOptions} from "../../../../(auth)/auth/[...nextauth]/options";
++import {NextResponse} from "next/server";
++import {StudentModel} from "../../../../../../model/User";
++
++export async function GET(req: Request, { params }: { params: { subjectId: string[] } }) {
++  try {
++    await dbConnect();
++
++    const session = await getServerSession(authOptions);
++    const user: User = session?.user as User;
++
++    if (!session || !user) {
++      return NextResponse.json({error: 'Unauthorized. User must be logged in.'}, {status: 401});
++    }
++
++    if (!user.isTeacher) {
++      return NextResponse.json(
++        {error: 'User is not teacher'},
++        {status: 401}
++      );
++    }
++
++    const { subjectId } = await params;
++
++    if (!subjectId || subjectId.length === 0) {
++      return NextResponse.json(
++        {error: 'No subjectId provided'},
++        {status: 403}
++      )
++    }
++
++    const students = await StudentModel.aggregate([
++      {
++        $match: {
++          $in: [subjectId[0], "$enrolledSubjectId"]
++        }
++      },
++      {
++        $project: {
++          _id: 0,
++          name: 1,
++          student_id: 1
++        }
++      }
++    ])
++
++    if (!students) {
++      return NextResponse.json(
++        {error: 'student not found'},
++        {status: 404}
++      )
++    }
++
++    return NextResponse.json(students, {status: 200});
++  } catch (error) {
++    console.error(error);
++    return NextResponse.json(
++      { error: 'Internal Server Error' },
++      { status: 500 }
++    );
++  }
++}
+\ No newline at end of file
+Index: app/api/teacher/subjects/route.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/api/teacher/subjects/route.ts b/app/api/teacher/subjects/route.ts
+new file mode 100644
+--- /dev/null	(date 1735849473557)
++++ b/app/api/teacher/subjects/route.ts	(date 1735849473557)
+@@ -0,0 +1,58 @@
++//get subjects
++
++import dbConnect from "../../../../lib/connectDb";
++import {getServerSession, User} from "next-auth";
++import {authOptions} from "../../(auth)/auth/[...nextauth]/options";
++import {NextResponse} from "next/server";
++import {TeacherModel} from "../../../../model/User";
++import mongoose from "mongoose";
++
++export async function GET() {
++  try {
++    await dbConnect();
++
++    const session = await getServerSession(authOptions);
++    const user: User = session?.user as User;
++
++    if (!session || !user) {
++      return NextResponse.json({error: 'Unauthorized. User must be logged in.'}, {status: 401});
++    }
++
++    if (!user.isTeacher) {
++      return NextResponse.json(
++        {error: 'User is not teacher'},
++        {status: 401}
++      );
++    }
++
++    const userId = new mongoose.Types.ObjectId(user._id);
++
++    const subjects = await TeacherModel.aggregate([
++      {
++        $match: {
++          user_id: userId
++        }
++      },
++      {
++        $project: {
++          subjectTeaching: 1
++        }
++      }
++    ])
++
++    if (!subjects || subjects.length === 0) {
++      return NextResponse.json(
++        {error: "teacher not found."},
++        {status: 404}
++      )
++    }
++
++    return NextResponse.json(subjects[0], {status: 200});
++  } catch (error) {
++    console.error(error);
++    return NextResponse.json(
++      { error: 'Internal Server Error' },
++      { status: 500 }
++    );
++  }
++}
+\ No newline at end of file
+Index: app/teacher/subjects/groups/[...subjectId]/page.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/teacher/subjects/groups/[...subjectId]/page.tsx b/app/teacher/subjects/groups/[...subjectId]/page.tsx
+new file mode 100644
+--- /dev/null	(date 1735912722215)
++++ b/app/teacher/subjects/groups/[...subjectId]/page.tsx	(date 1735912722215)
+@@ -0,0 +1,189 @@
++"use client"
++
++import {useModel} from "../../../../../hooks/user-model-store";
++import {useParams, useRouter} from "next/navigation";
++import {useEffect, useState} from "react";
++import axios from "axios";
++import DotsLoader from "../../../../../components/loading/dotLoader";
++
++export default function GroupsPage() {
++  const [groupName, setGroupName] = useState<string>("");
++  const [deleteGroupId, setDeleteGroupId] = useState<string>("");
++  const [showDeletePopup, setShowDeletePopup] = useState<boolean>(false);
++  const { groups, setGroups, isLoading, setLoading } = useModel();
++  const router = useRouter();
++  const params = useParams();
++  const subjectId = params.subjectId?.[0]
++
++  useEffect(() => {
++    async function fetchData() {
++      if (!subjectId) return;
++
++      setLoading(true);
++      try {
++        const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/teacher/subjects/groups/${subjectId}`);
++        if (res.status === 200) {
++          setGroups(res.data);
++        } else {
++          router.push("/");
++        }
++      } catch (error) {
++        console.error("Error fetching data:", error);
++        router.push("/");
++      } finally {
++        setLoading(false);
++      }
++    }
++
++    fetchData();
++  }, [router, setGroups, setLoading, subjectId]);
++
++
++  async function handleAddGroup() {
++    if (!groupName.trim()) {
++      alert("Group name cannot be empty.");
++      return;
++    }
++
++    setLoading(true);
++    try {
++      const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/teacher/subjects/groups/${subjectId}`, {groupName});
++      if (res.status === 200) {
++        setGroups([...groups, {_id: res.data._id, groupName: res.data.groupName}]);
++        setGroupName("");
++      }
++    } catch (error) {
++      console.error("Error adding group:", error);
++    } finally {
++      setLoading(false);
++    }
++  }
++
++  async function handleDeleteGroup() {
++    if (!deleteGroupId) return;
++
++    setLoading(true);
++    try {
++      const res = await axios.delete(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/teacher/subjects/groups/${deleteGroupId}`);
++
++      if (res.status === 200) {
++        setGroups(groups.filter((group) => group._id.toString() !== deleteGroupId));
++        setShowDeletePopup(false);
++        setDeleteGroupId("");
++      } else {
++        console.error("Failed to delete group");
++      }
++    } catch (error) {
++      console.error("Error deleting group:", error);
++    } finally {
++      setLoading(false);
++    }
++  }
++
++
++
++  if (!groups || isLoading) {
++    return <DotsLoader />;
++  }
++
++  return (
++    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black text-white">
++      {/* Page Header */}
++      <div className="w-full py-10 bg-gray-950 shadow-lg">
++        <h1 className="text-3xl font-extrabold text-center text-blue-500 tracking-wide">
++          Groups for Subject: {subjectId}
++        </h1>
++      </div>
++
++      {/* Add Group Section */}
++      <div className="flex flex-col items-center mt-8 space-y-4">
++        <div className="flex items-center space-x-4">
++          <input
++            type="text"
++            className="bg-gray-800 text-white px-4 py-2 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
++            placeholder="Enter group name"
++            value={groupName}
++            onChange={(e) => setGroupName(e.target.value)}
++          />
++          <button
++            className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-semibold shadow-lg transition-all duration-300"
++            onClick={handleAddGroup}
++          >
++            Add Group
++          </button>
++        </div>
++        {groups.length === 0 && (
++          <div className="text-gray-400 text-lg mt-4">
++            No groups found. Add some groups to get started!
++          </div>
++        )}
++      </div>
++
++      {/* Groups List */}
++      <div className="flex flex-col items-center mt-10 px-4">
++        {groups.length > 0 && (
++          <div className="w-full max-w-5xl max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
++            {groups.map((group) => (
++              <div
++                key={group._id.toString()}
++                className="flex flex-col md:flex-row w-full bg-gray-800 rounded-lg shadow-xl items-center justify-between p-6 my-4 hover:scale-105 transform transition-transform duration-300"
++              >
++                {/* Group Info */}
++                <div className="text-lg font-semibold text-white">
++                  {group.groupName}
++                </div>
++
++                {/* Action Buttons */}
++                <div className="flex space-x-4 mt-4 md:mt-0">
++                  <button
++                    className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-semibold shadow-lg transition-all duration-300"
++                    onClick={() =>
++                      router.push(
++                        `/teacher/subjects/${subjectId}/groups/${group.groupName}/attendance`
++                      )
++                    }
++                  >
++                    Take Attendance
++                  </button>
++                  <button
++                    className="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-semibold shadow-lg transition-all duration-300"
++                    onClick={() => {
++                      setDeleteGroupId(group._id.toString());
++                      setShowDeletePopup(true);
++                    }}
++                  >
++                    Delete Group
++                  </button>
++                </div>
++              </div>
++            ))}
++          </div>
++        )}
++      </div>
++
++      {/* Delete Confirmation Popup */}
++      {showDeletePopup && (
++        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
++          <div className="bg-gray-800 text-white p-6 rounded-lg shadow-lg w-96">
++            <h2 className="text-xl font-bold mb-4">Delete Group</h2>
++            <p>Are you sure you want to delete this group?</p>
++            <div className="flex justify-end space-x-4 mt-6">
++              <button
++                className="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg font-semibold transition-all duration-300"
++                onClick={() => setShowDeletePopup(false)}
++              >
++                Cancel
++              </button>
++              <button
++                className="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-semibold transition-all duration-300"
++                onClick={handleDeleteGroup}
++              >
++                Delete
++              </button>
++            </div>
++          </div>
++        </div>
++      )}
++    </div>
++  );
++}
+\ No newline at end of file
+Index: app/clubs/page.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>'use client'\nimport { useRouter } from \"next/navigation\";\nimport { useModel } from \"../../hooks/user-model-store\";\nimport { useEffect } from \"react\";\nimport axios from \"axios\";\nimport DotsLoader from \"../../components/loading/dotLoader\";\n\nexport default function ClubsPage() {\n  const { allClubs, setAllClub, setLoading } = useModel();\n  const router = useRouter();\n\n  useEffect(() => {\n    async function fetchData() {\n      setLoading(true);\n      try {\n        const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/clubs`);\n        if (res.status === 200) {\n          setAllClub(res.data);\n        } else {\n          router.push(\"/\");\n        }\n      } catch (error) {\n        console.error(\"Error fetching data:\", error);\n        router.push(\"/\");\n      } finally {\n        setLoading(false);\n      }\n    }\n\n    fetchData();\n  }, [router, setAllClub, setLoading]);\n\n  if (!allClubs) {\n    return <DotsLoader />;\n  }\n\n  return (\n    <div className=\"flex flex-col items-center bg-gradient-to-b from-[#1F2833] to-[#0B0C10] min-h-screen p-5 gap-10\">\n      <h1 className=\"text-4xl font-bold text-[#66FCF1] mb-6\">Clubs</h1>\n      {allClubs.map((club) => (\n        <div\n          key={club._id.toString()}\n          className=\"flex flex-col flex-shrink-0 w-[70%] p-6 border-2 rounded-xl border-[#45A29E] shadow-md shadow-[#66FCF1]/50 bg-gradient-to-r from-[#1F2833] via-[#0B0C10] to-[#45A29E] hover:shadow-lg hover:scale-105 transition-all duration-300\"\n        >\n          <div className=\"flex items-center w-full justify-between mb-4\">\n            <h2 className=\"text-2xl font-bold text-[#C5C6C7]\">{club.clubName}</h2>\n            <button\n              className=\"text-lg font-bold px-6 py-2 rounded-3xl bg-gradient-to-br from-[#45A29E] to-[#66FCF1] text-[#0B0C10] hover:from-[#66FCF1] hover:to-[#45A29E] transition-colors duration-300\"\n              onClick={() => router.push(`/clubs/${club._id}`)}\n            >\n              View Club\n            </button>\n          </div>\n          <img\n            src={club.clubLogo || \"https://india.acm.org/images/acm_rgb_grad_pos_diamond.png\"}\n            alt={`${club.clubName} Logo`}\n            className=\"w-36 h-36 object-cover rounded-full border-2 border-[#66FCF1] shadow-md\"\n          />\n        </div>\n      ))}\n    </div>\n  );\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/clubs/page.tsx b/app/clubs/page.tsx
+--- a/app/clubs/page.tsx	(revision 70db818a66525ac6679143517e46bd0cb42fdb84)
++++ b/app/clubs/page.tsx	(date 1735770082209)
+@@ -34,30 +34,64 @@
+     return <DotsLoader />;
+   }
+ 
++  if (allClubs.length === 0) {
++    return (
++      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black text-white">
++        <div className="w-full py-10 bg-gray-950 shadow-lg">
++          <h1 className="text-3xl font-extrabold text-center text-blue-500 tracking-wide">
++            No Clubs Available
++          </h1>
++        </div>
++        <div className="flex flex-col items-center mt-20 px-4">
++          <div className="text-gray-400 text-lg">There are no clubs to display right now.</div>
++        </div>
++      </div>
++    );
++  }
++
+   return (
+-    <div className="flex flex-col items-center bg-gradient-to-b from-[#1F2833] to-[#0B0C10] min-h-screen p-5 gap-10">
+-      <h1 className="text-4xl font-bold text-[#66FCF1] mb-6">Clubs</h1>
+-      {allClubs.map((club) => (
+-        <div
+-          key={club._id.toString()}
+-          className="flex flex-col flex-shrink-0 w-[70%] p-6 border-2 rounded-xl border-[#45A29E] shadow-md shadow-[#66FCF1]/50 bg-gradient-to-r from-[#1F2833] via-[#0B0C10] to-[#45A29E] hover:shadow-lg hover:scale-105 transition-all duration-300"
+-        >
+-          <div className="flex items-center w-full justify-between mb-4">
+-            <h2 className="text-2xl font-bold text-[#C5C6C7]">{club.clubName}</h2>
+-            <button
+-              className="text-lg font-bold px-6 py-2 rounded-3xl bg-gradient-to-br from-[#45A29E] to-[#66FCF1] text-[#0B0C10] hover:from-[#66FCF1] hover:to-[#45A29E] transition-colors duration-300"
+-              onClick={() => router.push(`/clubs/${club._id}`)}
+-            >
+-              View Club
+-            </button>
+-          </div>
+-          <img
+-            src={club.clubLogo || "https://india.acm.org/images/acm_rgb_grad_pos_diamond.png"}
+-            alt={`${club.clubName} Logo`}
+-            className="w-36 h-36 object-cover rounded-full border-2 border-[#66FCF1] shadow-md"
+-          />
++    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black text-white">
++      {/* Page Header */}
++      <div className="w-full py-10 bg-gray-950 shadow-lg">
++        <h1 className="text-4xl font-extrabold text-center text-blue-500 tracking-wide">
++          Clubs
++        </h1>
++      </div>
++
++      {/* Clubs List */}
++      <div className="flex flex-col items-center mt-10 px-4">
++        <div className="w-full max-w-7xl max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
++          {allClubs.map((club) => (
++            <div
++              key={club._id.toString()}
++              className="flex flex-col md:flex-row w-full bg-gray-800 rounded-lg shadow-lg items-center justify-between p-6 my-8 hover:scale-105 transform transition-transform duration-300"
++            >
++              {/* Club Logo */}
++              <div className="flex justify-center items-center mb-6 md:mb-0 md:mr-8">
++                <img
++                  src={club.clubLogo || "https://india.acm.org/images/acm_rgb_grad_pos_diamond.png"}
++                  className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 shadow-lg border-blue-500"
++                  alt={`${club.clubName} Logo`}
++                />
++              </div>
++
++              {/* Club Details */}
++              <div className="flex flex-col justify-center items-center md:items-start text-center md:text-left">
++                <div className="text-2xl font-bold text-white mb-4">{club.clubName}</div>
++
++                {/* View Club Button */}
++                <button
++                  className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded-lg font-semibold shadow-xl transition-all duration-300 mt-4 md:mt-0"
++                  onClick={() => router.push(`/clubs/${club._id}`)}
++                >
++                  View Club
++                </button>
++              </div>
++            </div>
++          ))}
+         </div>
+-      ))}
++      </div>
+     </div>
+   );
++
+ }
+Index: app/teacher/subjects/groups/attendance/[...subjectId]/page.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/teacher/subjects/groups/attendance/[...subjectId]/page.tsx b/app/teacher/subjects/groups/attendance/[...subjectId]/page.tsx
+new file mode 100644
+--- /dev/null	(date 1735915222564)
++++ b/app/teacher/subjects/groups/attendance/[...subjectId]/page.tsx	(date 1735915222564)
+@@ -0,0 +1,45 @@
++import {useEffect, useState} from "react";
++import {useModel} from "../../../../../../hooks/user-model-store";
++import {useParams, useRouter} from "next/navigation";
++import axios from "axios";
++import DotsLoader from "../../../../../../components/loading/dotLoader";
++
++export default function AttendancePage() {
++  const { students, setStudents, isLoading, setLoading } = useModel();
++  const router = useRouter();
++  const params = useParams();
++  const subjectId = params.subjectId?.[0];
++  const groupId = params.subjectId?.[1];
++
++  useEffect(() => {
++    async function fetchData() {
++      if (!subjectId) return;
++
++      setLoading(true);
++      try {
++        const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/teacher/subjects/attendance/${subjectId}`);
++        if (res.status === 200) {
++          setStudents(res.data);
++        } else {
++          router.push("/");
++        }
++      } catch (error) {
++        console.error("Error fetching data:", error);
++        router.push("/");
++      } finally {
++        setLoading(false);
++      }
++    }
++
++    fetchData();
++  }, [router, setStudents, setLoading, subjectId]);
++
++
++  if (isLoading) {
++    return <DotsLoader />
++  }
++
++
++
++
++}
+\ No newline at end of file
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"AutoImportSettings\">\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\n  </component>\n  <component name=\"ChangeListManager\">\n    <list default=\"true\" id=\"3d45d623-ee8a-421e-8d0d-07f88c3fd10c\" name=\"Changes\" comment=\"fixup! recovered files\" />\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\n  </component>\n  <component name=\"FileTemplateManagerImpl\">\n    <option name=\"RECENT_TEMPLATES\">\n      <list>\n        <option value=\"TypeScript File\" />\n        <option value=\"TypeScript JSX File\" />\n      </list>\n    </option>\n  </component>\n  <component name=\"Git.Settings\">\n    <option name=\"RECENT_BRANCH_BY_REPOSITORY\">\n      <map>\n        <entry key=\"$PROJECT_DIR$\" value=\"css-testing\" />\n      </map>\n    </option>\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\n    <option name=\"RESET_MODE\" value=\"MIXED\" />\n  </component>\n  <component name=\"GitHubPullRequestSearchHistory\">{\n  &quot;lastFilter&quot;: {\n    &quot;state&quot;: &quot;OPEN&quot;,\n    &quot;assignee&quot;: &quot;VaibhavVerma27&quot;\n  }\n}</component>\n  <component name=\"GithubPullRequestsUISettings\">{\n  &quot;selectedUrlAndAccountId&quot;: {\n    &quot;url&quot;: &quot;https://github.com/VaibhavVerma27/Ideathon.git&quot;,\n    &quot;accountId&quot;: &quot;2d85c29d-bd34-4650-83c7-ed5abaf2838e&quot;\n  }\n}</component>\n  <component name=\"ProblemsViewState\">\n    <option name=\"selectedTabId\" value=\"CurrentFile\" />\n  </component>\n  <component name=\"ProjectColorInfo\">{\n  &quot;associatedIndex&quot;: 5\n}</component>\n  <component name=\"ProjectId\" id=\"2pwcVN5jNvv3r7ErnbxxbDHxjE8\" />\n  <component name=\"ProjectViewState\">\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\n    <option name=\"showLibraryContents\" value=\"true\" />\n  </component>\n  <component name=\"PropertiesComponent\">{\n  &quot;keyToString&quot;: {\n    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,\n    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,\n    &quot;git-widget-placeholder&quot;: &quot;main&quot;,\n    &quot;last_opened_file_path&quot;: &quot;/home/vaibhav-verma/WebstormProjects/ideathon/app/api/admin/user&quot;,\n    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,\n    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,\n    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,\n    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,\n    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,\n    &quot;ts.external.directory.path&quot;: &quot;/home/vaibhav-verma/WebstormProjects/ideathon/node_modules/typescript/lib&quot;,\n    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;\n  }\n}</component>\n  <component name=\"RecentsManager\">\n    <key name=\"CopyFile.RECENT_KEYS\">\n      <recent name=\"$PROJECT_DIR$/app/api/admin/user\" />\n    </key>\n    <key name=\"MoveFile.RECENT_KEYS\">\n      <recent name=\"$PROJECT_DIR$/app/api/admin/subjects/teacher\" />\n      <recent name=\"$PROJECT_DIR$/app/admin\" />\n      <recent name=\"$PROJECT_DIR$/app/events\" />\n      <recent name=\"$PROJECT_DIR$/app/admin/user/subjects/teachers\" />\n      <recent name=\"$PROJECT_DIR$/app/api/admin/user\" />\n    </key>\n  </component>\n  <component name=\"SharedIndexes\">\n    <attachedChunks>\n      <set>\n        <option value=\"bundled-js-predefined-d6986cc7102b-deb605915726-JavaScript-WS-243.22562.222\" />\n      </set>\n    </attachedChunks>\n  </component>\n  <component name=\"SpellCheckerSettings\" RuntimeDictionaries=\"0\" Folders=\"0\" CustomDictionaries=\"0\" DefaultDictionary=\"application-level\" UseSingleDictionary=\"true\" transferred=\"true\" />\n  <component name=\"TaskManager\">\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\n      <changelist id=\"3d45d623-ee8a-421e-8d0d-07f88c3fd10c\" name=\"Changes\" comment=\"\" />\n      <created>1733680600234</created>\n      <option name=\"number\" value=\"Default\" />\n      <option name=\"presentableId\" value=\"Default\" />\n      <updated>1733680600234</updated>\n      <workItem from=\"1733680601320\" duration=\"285000\" />\n      <workItem from=\"1733724675594\" duration=\"611000\" />\n      <workItem from=\"1733822080765\" duration=\"1111000\" />\n      <workItem from=\"1733835011657\" duration=\"6379000\" />\n      <workItem from=\"1733847978381\" duration=\"5516000\" />\n      <workItem from=\"1733894701134\" duration=\"9865000\" />\n      <workItem from=\"1733925499497\" duration=\"1606000\" />\n      <workItem from=\"1733928369051\" duration=\"251000\" />\n      <workItem from=\"1733928630064\" duration=\"4368000\" />\n      <workItem from=\"1733980473805\" duration=\"1457000\" />\n      <workItem from=\"1734070775491\" duration=\"813000\" />\n      <workItem from=\"1734085817459\" duration=\"30000\" />\n      <workItem from=\"1734183280596\" duration=\"5230000\" />\n      <workItem from=\"1734189002399\" duration=\"3292000\" />\n      <workItem from=\"1734192305926\" duration=\"2303000\" />\n      <workItem from=\"1734194762220\" duration=\"86000\" />\n      <workItem from=\"1734199075722\" duration=\"1951000\" />\n      <workItem from=\"1734202864084\" duration=\"690000\" />\n      <workItem from=\"1734243660946\" duration=\"163000\" />\n      <workItem from=\"1734247462466\" duration=\"601000\" />\n      <workItem from=\"1734274484596\" duration=\"221000\" />\n      <workItem from=\"1734285025230\" duration=\"756000\" />\n      <workItem from=\"1734342119399\" duration=\"12152000\" />\n      <workItem from=\"1734415130463\" duration=\"154000\" />\n      <workItem from=\"1734451510425\" duration=\"1022000\" />\n      <workItem from=\"1734515159954\" duration=\"1302000\" />\n      <workItem from=\"1734587553335\" duration=\"2223000\" />\n      <workItem from=\"1734622604490\" duration=\"6450000\" />\n      <workItem from=\"1734672636682\" duration=\"3862000\" />\n      <workItem from=\"1734697995805\" duration=\"4210000\" />\n      <workItem from=\"1734709695437\" duration=\"1288000\" />\n      <workItem from=\"1734719253317\" duration=\"6275000\" />\n      <workItem from=\"1734766424331\" duration=\"15352000\" />\n      <workItem from=\"1734859762039\" duration=\"16109000\" />\n      <workItem from=\"1734888157235\" duration=\"1752000\" />\n      <workItem from=\"1734936981008\" duration=\"20081000\" />\n      <workItem from=\"1735026512179\" duration=\"9324000\" />\n      <workItem from=\"1735048088338\" duration=\"5248000\" />\n      <workItem from=\"1735060156138\" duration=\"2618000\" />\n      <workItem from=\"1735064720771\" duration=\"656000\" />\n      <workItem from=\"1735106418820\" duration=\"148000\" />\n      <workItem from=\"1735141420059\" duration=\"11523000\" />\n      <workItem from=\"1735194562583\" duration=\"6771000\" />\n      <workItem from=\"1735224189800\" duration=\"10335000\" />\n      <workItem from=\"1735280126356\" duration=\"8507000\" />\n      <workItem from=\"1735312870855\" duration=\"4460000\" />\n      <workItem from=\"1735327415197\" duration=\"5118000\" />\n      <workItem from=\"1735368401501\" duration=\"8272000\" />\n      <workItem from=\"1735394000412\" duration=\"72000\" />\n      <workItem from=\"1735395983128\" duration=\"5172000\" />\n      <workItem from=\"1735411913079\" duration=\"275000\" />\n      <workItem from=\"1735412199180\" duration=\"4549000\" />\n      <workItem from=\"1735456473928\" duration=\"2596000\" />\n      <workItem from=\"1735473072434\" duration=\"168000\" />\n      <workItem from=\"1735476153656\" duration=\"3525000\" />\n      <workItem from=\"1735481667323\" duration=\"351000\" />\n      <workItem from=\"1735490418912\" duration=\"13947000\" />\n      <workItem from=\"1735551425427\" duration=\"1037000\" />\n      <workItem from=\"1735573605003\" duration=\"15386000\" />\n      <workItem from=\"1735630632922\" duration=\"3068000\" />\n      <workItem from=\"1735646800736\" duration=\"2798000\" />\n      <workItem from=\"1735662088128\" duration=\"1184000\" />\n      <workItem from=\"1735671274748\" duration=\"238000\" />\n      <workItem from=\"1735719997150\" duration=\"3868000\" />\n      <workItem from=\"1735738596357\" duration=\"10016000\" />\n    </task>\n    <servers />\n  </component>\n  <component name=\"TypeScriptGeneratedFilesManager\">\n    <option name=\"version\" value=\"3\" />\n    <option name=\"exactExcludedFiles\">\n      <list>\n        <option value=\"$PROJECT_DIR$/next.config.mjs\" />\n      </list>\n    </option>\n  </component>\n  <component name=\"Vcs.Log.Tabs.Properties\">\n    <option name=\"TAB_STATES\">\n      <map>\n        <entry key=\"MAIN\">\n          <value>\n            <State>\n              <option name=\"FILTERS\">\n                <map>\n                  <entry key=\"branch\">\n                    <value>\n                      <list>\n                        <option value=\"main\" />\n                      </list>\n                    </value>\n                  </entry>\n                </map>\n              </option>\n            </State>\n          </value>\n        </entry>\n      </map>\n    </option>\n  </component>\n  <component name=\"VcsManagerConfiguration\">\n    <MESSAGE value=\"fixup! recovered files\" />\n    <option name=\"LAST_COMMIT_MESSAGE\" value=\"fixup! recovered files\" />\n  </component>\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+--- a/.idea/workspace.xml	(revision 70db818a66525ac6679143517e46bd0cb42fdb84)
++++ b/.idea/workspace.xml	(date 1735915222616)
+@@ -4,7 +4,26 @@
+     <option name="autoReloadType" value="SELECTIVE" />
+   </component>
+   <component name="ChangeListManager">
+-    <list default="true" id="3d45d623-ee8a-421e-8d0d-07f88c3fd10c" name="Changes" comment="fixup! recovered files" />
++    <list default="true" id="3d45d623-ee8a-421e-8d0d-07f88c3fd10c" name="Changes" comment="fixup! recovered files">
++      <change afterPath="$PROJECT_DIR$/app/api/teacher/subjects/attendance/[...subjectId]/route.ts" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/app/api/teacher/subjects/groups/[...subjectId]/route.ts" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/app/api/teacher/subjects/route.ts" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/app/teacher/subjects/groups/[...subjectId]/page.tsx" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/app/teacher/subjects/groups/attendance/[...subjectId]/page.tsx" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/app/teacher/subjects/page.tsx" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_12_27_24,_11_51 AM_[Changes]/shelved.patch" beforeDir="false" />
++      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_12_27_24__11_51AM__Changes_.xml" beforeDir="false" />
++      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/app/api/admin/subjects/teacher/add/[...teacherId]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/admin/subjects/teacher/add/[...teacherId]/route.ts" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/app/api/attendance/[teacherId]/[...subjectId]/route.ts" beforeDir="false" />
++      <change beforePath="$PROJECT_DIR$/app/api/attendance/confirmButton/route.ts" beforeDir="false" />
++      <change beforePath="$PROJECT_DIR$/app/api/marks/[...teacherId]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/teacher/marks/[...teacherId]/route.ts" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/app/api/user/friends/accept-friend/[...studentId]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/user/friends/accept-friend/[...studentId]/route.ts" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/app/clubs/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/clubs/page.tsx" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/app/events/[...eventId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/events/[...eventId]/page.tsx" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/hooks/user-model-store.ts" beforeDir="false" afterPath="$PROJECT_DIR$/hooks/user-model-store.ts" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/model/User.ts" beforeDir="false" afterPath="$PROJECT_DIR$/model/User.ts" afterDir="false" />
++    </list>
+     <option name="SHOW_DIALOG" value="false" />
+     <option name="HIGHLIGHT_CONFLICTS" value="true" />
+     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+@@ -70,11 +89,11 @@
+       <recent name="$PROJECT_DIR$/app/api/admin/user" />
+     </key>
+     <key name="MoveFile.RECENT_KEYS">
++      <recent name="$PROJECT_DIR$/app/api/teacher/subjects/groups/[...subjectId]" />
++      <recent name="$PROJECT_DIR$/app/api/teacher" />
+       <recent name="$PROJECT_DIR$/app/api/admin/subjects/teacher" />
+       <recent name="$PROJECT_DIR$/app/admin" />
+       <recent name="$PROJECT_DIR$/app/events" />
+-      <recent name="$PROJECT_DIR$/app/admin/user/subjects/teachers" />
+-      <recent name="$PROJECT_DIR$/app/api/admin/user" />
+     </key>
+   </component>
+   <component name="SharedIndexes">
+@@ -156,7 +175,11 @@
+       <workItem from="1735662088128" duration="1184000" />
+       <workItem from="1735671274748" duration="238000" />
+       <workItem from="1735719997150" duration="3868000" />
+-      <workItem from="1735738596357" duration="10016000" />
++      <workItem from="1735738596357" duration="21727000" />
++      <workItem from="1735803780445" duration="3957000" />
++      <workItem from="1735834776101" duration="1436000" />
++      <workItem from="1735887939114" duration="9151000" />
++      <workItem from="1735912253570" duration="2503000" />
+     </task>
+     <servers />
+   </component>
+Index: app/api/user/friends/accept-friend/[...studentId]/route.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>//accept friend request\n\nimport dbConnect from \"../../../../../../lib/connectDb\";\nimport {getServerSession, User} from \"next-auth\";\nimport {authOptions} from \"../../../../(auth)/auth/[...nextauth]/options\";\nimport {NextResponse} from \"next/server\";\nimport mongoose from \"mongoose\";\nimport {FriendRequestModel, StudentModel} from \"../../../../../../model/User\";\n\nexport async function PATCH(req: Request, { params } : { params : { studentId: string[] } } )  {\n  try {\n    await dbConnect();\n\n    const session = await getServerSession(authOptions);\n    const user: User = session?.user as User;\n\n    if (!session || !user) {\n      return NextResponse.json({ error: 'Unauthorized. User must be logged in.' }, { status: 401 });\n    }\n\n    const { studentId } = await params;\n\n    if (!studentId || studentId.length < 2) {\n      return NextResponse.json(\n        {error: \"student id not found\"},\n        {status: 403}\n      )\n    }\n\n    if (!mongoose.Types.ObjectId.isValid(studentId[0]) || !mongoose.Types.ObjectId.isValid(studentId[1])) {\n      return NextResponse.json(\n        { error: \"student id is not valid\" },\n        { status: 403 }\n      );\n    }\n\n    const to = new mongoose.Types.ObjectId(studentId[0]);\n    const from = new mongoose.Types.ObjectId(studentId[1]);\n\n    const deleteRequest = await FriendRequestModel.deleteOne({from, to});\n\n    console.log(\"here\")\n    if (!deleteRequest) {\n      return NextResponse.json(\n        {error: \"failed to delete friend request\"},\n        {status: 500}\n      )\n    }\n\n    console.log(\"here2\")\n    const student1Update = await StudentModel.updateOne(\n      { _id: to },\n      { $addToSet: { friends: from } }\n    );\n\n    const student2Update = await StudentModel.updateOne(\n      { _id: from },\n      { $addToSet: { friends: to } }\n    );\n\n    if (!student1Update.modifiedCount || !student2Update.modifiedCount) {\n      return NextResponse.json(\n        { error: \"Failed to update friends for one or both students\" },\n        { status: 500 }\n      );\n    }\n\n    return NextResponse.json(\n      {status: 200},\n    )\n  } catch (error) {\n    console.error(error);\n    return NextResponse.json({ error: 'An error occurred while accepting request.' }, { status: 500 });\n  }\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/api/user/friends/accept-friend/[...studentId]/route.ts b/app/api/user/friends/accept-friend/[...studentId]/route.ts
+--- a/app/api/user/friends/accept-friend/[...studentId]/route.ts	(revision 70db818a66525ac6679143517e46bd0cb42fdb84)
++++ b/app/api/user/friends/accept-friend/[...studentId]/route.ts	(date 1735847390347)
+@@ -50,7 +50,7 @@
+     console.log("here2")
+     const student1Update = await StudentModel.updateOne(
+       { _id: to },
+-      { $addToSet: { friends: from } }
++      {  $addToSet: { friends: from } }
+     );
+ 
+     const student2Update = await StudentModel.updateOne(
+Index: app/api/teacher/subjects/groups/[...subjectId]/route.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/api/teacher/subjects/groups/[...subjectId]/route.ts b/app/api/teacher/subjects/groups/[...subjectId]/route.ts
+new file mode 100644
+--- /dev/null	(date 1735904396441)
++++ b/app/api/teacher/subjects/groups/[...subjectId]/route.ts	(date 1735904396441)
+@@ -0,0 +1,188 @@
++import dbConnect from "../../../../../../lib/connectDb";
++import {getServerSession, User} from "next-auth";
++import {authOptions} from "../../../../(auth)/auth/[...nextauth]/options";
++import {NextResponse} from "next/server";
++import {AttendanceModel} from "../../../../../../model/User";
++import mongoose from "mongoose";
++
++//get all groups of a subject
++export async function GET(req: Request, { params }: { params: { subjectId: string[] } }) {
++  try {
++    await dbConnect();
++
++    const session = await getServerSession(authOptions);
++    const user: User = session?.user as User;
++
++    if (!session || !user) {
++      return NextResponse.json({error: 'Unauthorized. User must be logged in.'}, {status: 401});
++    }
++
++    if (!user.isTeacher) {
++      return NextResponse.json(
++        {error: 'User is not teacher'},
++        {status: 401}
++      );
++    }
++
++    const { subjectId } = await params;
++
++    if (!subjectId || subjectId.length === 0) {
++      return NextResponse.json(
++        {error: 'No subjectId provided'},
++        {status: 403}
++      )
++    }
++
++    const groups = await AttendanceModel.aggregate([
++      {
++        $match: {
++          subjectId: subjectId[0],
++        }
++      },
++      {
++        $project: {
++          groupName: 1
++        }
++      }
++    ])
++
++    if (!groups) {
++      return NextResponse.json(
++        {error: "failed to fetch groups"},
++        {status: 500}
++      )
++    }
++
++    return NextResponse.json(groups, {status: 200})
++  } catch (error) {
++    console.error(error);
++    return NextResponse.json(
++      { error: 'Internal Server Error' },
++      { status: 500 }
++    );
++  }
++}
++
++
++//add a group in a subject
++export async function POST(req: Request, { params }: { params: { subjectId: string[] } }) {
++  try {
++    await dbConnect();
++
++    const session = await getServerSession(authOptions);
++    const user: User = session?.user as User;
++
++    if (!session || !user) {
++      return NextResponse.json({error: 'Unauthorized. User must be logged in.'}, {status: 401});
++    }
++
++    if (!user.isTeacher) {
++      return NextResponse.json(
++        {error: 'User is not teacher'},
++        {status: 401}
++      );
++    }
++
++    const userId = new mongoose.Types.ObjectId(user._id);
++
++    const { subjectId } = await params;
++
++    if (!subjectId || subjectId.length === 0) {
++      return NextResponse.json(
++        {error: 'No subjectId provided'},
++        {status: 403}
++      )
++    }
++
++    const { groupName } = await req.json();
++
++    if (!groupName) {
++      return NextResponse.json(
++        {error: "group Name is required"},
++        {status: 403}
++      )
++    }
++
++    const group = await AttendanceModel.create({
++      subjectId: subjectId[0],
++      groupName,
++      teacherId: userId,
++      totalClasses: 0,
++      dateStudentMap: []
++    })
++
++    if (!group) {
++      return NextResponse.json(
++        {error: " failed to create group"},
++        {status: 500}
++      )
++    }
++
++    return NextResponse.json(group, {status: 200});
++  } catch (error) {
++    console.error(error);
++    return NextResponse.json(
++      { error: 'Internal Server Error' },
++      { status: 500 }
++    );
++  }
++}
++
++
++//delete group  subjectId === groupId
++export async function DELETE(req: Request, { params }: { params: { subjectId: string[] } }) {
++  try {
++    await dbConnect();
++
++    const session = await getServerSession(authOptions);
++    const user: User = session?.user as User;
++
++    if (!session || !user) {
++      return NextResponse.json({error: 'Unauthorized. User must be logged in.'}, {status: 401});
++    }
++
++    if (!user.isTeacher) {
++      return NextResponse.json(
++        {error: 'User is not teacher'},
++        {status: 401}
++      );
++    }
++
++    const userId = new mongoose.Types.ObjectId(user._id);
++
++    const { subjectId } = await params;
++
++    if (!subjectId || subjectId.length === 0) {
++      return NextResponse.json(
++        {error: 'No groupId provided'},
++        {status: 403}
++      )
++    }
++
++    if (!mongoose.Types.ObjectId.isValid(subjectId[0])) {
++      return NextResponse.json(
++        {error: "invalid group id"},
++        {status: 403}
++      )
++    }
++
++    const groupId = new mongoose.Types.ObjectId(subjectId[0]);
++
++    const group = await AttendanceModel.deleteOne({_id: groupId, teacherId: userId});
++
++    if (!group) {
++      return NextResponse.json(
++        {error: " failed to delete group"},
++        {status: 403}
++      )
++    }
++
++    return NextResponse.json({status: 200});
++  } catch (error) {
++    console.error(error);
++    return NextResponse.json(
++      { error: 'Internal Server Error' },
++      { status: 500 }
++    );
++  }
++}

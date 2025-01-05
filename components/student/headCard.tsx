@@ -1,20 +1,23 @@
-export default function HeadCard() {
+interface Props {
+  name: string;
+  student_id: string;
+  profile: string;
+}
 
+export default function HeadCard({ name, student_id, profile }: Props) {
   return (
-    <>
-      <div
-        className="flex flex-row h-1/3 w-4/5 items-center justify-around border-2 rounded-xl border-cyan-300 shadow-md shadow-cyan-300/50">
-        <img
-          src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTfXKzxBrv-nr-V2w6n-Hf14w-Mw-p4tD_f6GPvjOCW4CoikavWniBoh4rNfKid-VyUwH4&usqp=CAU"
-          className="flex flex-col items-center w-16 h-16 border-2 rounded-full border-cyan-300 shadow-md shadow-cyan-300/50"
-        />
-        <div className="text-xl font-bold">
-          Name
-        </div>
-        <div className="text-xl font-bold">
-          SID
-        </div>
+    <div className="flex flex-row items-center justify-around m-5 p-6 w-full max-w-xl bg-gradient-to-b from-[#0B0C10] to-[#1F2833] border-2 rounded-xl border-cyan-300 shadow-lg shadow-cyan-300/50 flex-shrink-0">
+      <img
+        src={profile || "https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg"}
+        className="w-16 h-16 border-4 rounded-full border-cyan-300 shadow-md shadow-cyan-300/50"
+        alt="Profile"
+      />
+      <div className="text-lg md:text-xl font-bold text-[#66FCF1] text-center">
+        {name}
       </div>
-    </>
-  )
+      <div className="text-lg md:text-xl font-bold text-white text-center">
+        {student_id}
+      </div>
+    </div>
+  );
 }

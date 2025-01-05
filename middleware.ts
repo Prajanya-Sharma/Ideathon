@@ -10,18 +10,26 @@ export async function middleware(request: NextRequest) {
   const token = await getToken({ req: request });
   const url = request.nextUrl;
   console.log(token);
-  
+
   if (
     token &&
     (url.pathname.startsWith('/sign-in') ||
       url.pathname.startsWith('/sign-up') ||
       url.pathname.startsWith('/verify'))
   ) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    if (token.isTeacher) {
+      return NextResponse.redirect(new URL('/dashboard/teacher', request.url));
+    } else {
+      return NextResponse.redirect(new URL('/dashboard/student', request.url));
+    }
   }
 
   if (!token && url.pathname.startsWith('/dashboard')) {
     return NextResponse.redirect(new URL('/sign-in', request.url));
+  }
+  
+  if(!token?.sid_verification && url.pathname.startsWith('/dashboard/student')){
+    return NextResponse.redirect(new URL(`/verify-sid/${token?.username}`, request.url));
   }
 
   return NextResponse.next();

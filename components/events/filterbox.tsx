@@ -1,41 +1,51 @@
-export default function FilterBox() {
+"use client";
+
+import { useState } from "react";
+
+export default function FilterBox({ onFilterChange }: { onFilterChange: (filters: string[]) => void }) {
+  const filterOptions = ["Tech", "Coding", "Robotics", "Music", "Dance", "Art", "Comedy"];
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>, filter: string) => {
+    const isChecked = e.target.checked;
+    let updatedFilters = [...selectedFilters];
+    if (isChecked) {
+      updatedFilters.push(filter);
+    } else {
+      updatedFilters = updatedFilters.filter((item) => item !== filter);
+    }
+    setSelectedFilters(updatedFilters);
+    onFilterChange(updatedFilters);
+  };
 
   return (
-    <>
-      <div className="flex flex-col w-4/5 h-60 pl-4 border-2 rounded-xl border-cyan-300 shadow-md shadow-cyan-300/50">
-        <div className="text-2xl font-bold text-center mt-4 mb-4">
-          Filter Options
-        </div>
-        <div className="text-lg font-bold flex flex-row w-full mt-4">
-          <label className="inline-flex items-center">
-            <input type="checkbox" className="hidden peer"/>
-            <div className="w-6 h-6 rounded-full border-2 border-gray-500 peer-checked:bg-cyan-500 peer-checked:border-cyan-500"></div>
-          </label>
-          <div className="ml-2">
-            Option 1
-          </div>
-        </div>
-        <div className="text-lg font-bold flex flex-row w-full mt-4">
-          <label className="inline-flex items-center">
-            <input type="checkbox" className="hidden peer"/>
-            <div
-              className="w-6 h-6 rounded-full border-2 border-gray-500 peer-checked:bg-cyan-500 peer-checked:border-cyan-500"></div>
-          </label>
-          <div className="ml-2">
-            Option 2
-          </div>
-        </div>
-        <div className="text-lg font-bold flex flex-row w-full mt-4">
-          <label className="inline-flex items-center">
-            <input type="checkbox" className="hidden peer"/>
-            <div
-              className="w-6 h-6 rounded-full border-2 border-gray-500 peer-checked:bg-cyan-500 peer-checked:border-cyan-500"></div>
-          </label>
-          <div className="ml-2">
-            Option 3
-          </div>
-        </div>
+    <div className="flex flex-col flex-shrink-0 w-half p-6 m-5 border border-blue-900 rounded-sm bg-[#3940481f] transition-all duration-300">
+      {/* Filter Box Header */}
+      <div className="text-lg font-semibold text-center mb-4 text-gray-300">
+        Filter Options
       </div>
-    </>
-  )
+
+      {/* Filter Options */}
+      <div className="flex flex-col gap-3">
+        {filterOptions.map((filter) => (
+          <div
+            key={filter}
+            className="text-base font-medium flex flex-row items-center w-full text-gray-300"
+          >
+            <label className="inline-flex items-center cursor-pointer">
+              {/* Custom Checkbox */}
+              <input
+                type="checkbox"
+                className="hidden peer"
+                onChange={(e) => handleChange(e, filter)}
+              />
+              <div className="w-5 h-5 border border-blue-900 rounded-sm peer-checked:bg-blue-600 peer-checked:border-blue-700 transition-all duration-200"></div>
+            </label>
+            {/* Filter Label */}
+            <div className="ml-3">{filter}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }

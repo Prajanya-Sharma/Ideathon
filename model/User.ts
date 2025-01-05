@@ -1,5 +1,7 @@
+import { strict } from "assert";
 import mongoose, { Schema, Document, Model } from "mongoose";
 import { v4 as uuidv4 } from 'uuid'
+import { string } from "zod";
 
 export interface User extends Document {
     username: string;
@@ -10,6 +12,10 @@ export interface User extends Document {
     isVerified: boolean;
     isStudent:boolean
     isTeacher: boolean;
+    isAdmin: boolean;
+    reqTeacher: boolean;
+    reqAdmin: boolean;
+    sid_verification:boolean;
 }
 
 const UserSchema: Schema<User> = new Schema({
@@ -48,96 +54,130 @@ const UserSchema: Schema<User> = new Schema({
         type: Boolean,
         default: false, // Default to false, only true if admin updates the field
     },
+    isAdmin: {
+        type: Boolean,
+        default: false,
+    },
+    reqTeacher: {
+        type: Boolean,
+        default: false,
+    },
+    reqAdmin: {
+        type: Boolean,
+        default: false,
+    },
+    sid_verification:{
+        type:Boolean,
+        default:false,
+    }
 });
-UserSchema.post('save', async function (this: User) {
+
+UserSchema.post("save", async function (this: User) {
     if (this.isStudent) {
+        
         try {
+            const existingStudent = await StudentModel.findOne({ user_id: this._id });
+            if (existingStudent) {
+                console.log(`Student with user_id ${this._id} already exists.`);
+                return; 
+            }
             const studentId = `S-${uuidv4()}`;
             const newStudent = new StudentModel({
                 user_id: this._id,
+                email:this.email,
                 name: this.username,
                 student_id: studentId,
                 semester: 1,
-                branch: 'Unknown',
-                sid_verification: false,
+                branch: "Unknown",
+                sid_verification: this.sid_verification,
                 enrolledSubjectId: [],
                 teacherSubjectMap: {},
                 attendanceSubjectMap: {},
-                marksStudentMap: { midsem: {}, endsem: {} },
                 clubsPartOf: [],
                 interestedEvents: [],
                 clubsHeadOf: [],
+                profile: "",
+                friends: []
             });
-            
+
             await newStudent.save();
         } catch (error) {
-            console.error('Error creating student:', error);
+            console.error("Error creating student:", error);
         }
     }
-});
-UserSchema.post('save', async function (this: User) {
-    if (this.isTeacher) {
+
+    if (this.reqTeacher) {
         try {
-            const teacherId = `S-${uuidv4()}`;
-            const newTeacher= new TeacherModel({
+            const alreadyRequested = await RequestModel.findOne({user_id: this._id})
+
+            if (alreadyRequested) {
+                console.log("already requested for teacher")
+                return;
+            }
+
+            const request = new RequestModel({
                 user_id: this._id,
-                teacher_id: teacherId,
-                admin_verification: false,
-                subjectTeaching: [],
-                StudentsMarksMap: {},
-            });
-            
-            await newTeacher.save();
+                for_teacher: true,
+                for_admin: false,
+            })
+
+            await request.save();
         } catch (error) {
-            console.error('Error creating teacher:', error);
+            console.error("Error making request for teacher:", error);
+        }
+    }
+
+    if (this.reqAdmin) {
+        try {
+            const alreadyRequested = await RequestModel.findOne({user_id: this._id})
+
+            if (alreadyRequested) {
+                console.log("already requested for admin")
+                return;
+            }
+
+            const request = new RequestModel({
+                user_id: this._id,
+                for_teacher: false,
+                for_admin: true,
+            })
+
+            await request.save();
+        } catch (error) {
+            console.error("Error making request for admin:", error);
         }
     }
 });
 
-export interface MarksEntry {
-    midsem: number;
-    endsem: number;
-    quiz1: number;
-    quiz2?: number;
-    quiz3?: number;
-    quiz4?: number;
-    labquiz1: number;
-    labquiz2?: number;
-}
 
 export interface Student extends Document {
     user_id: mongoose.Schema.Types.ObjectId;
-    name: string;
+    email?:string;
+    name?:string;
     student_id?: string;
     semester: number;
     phoneNumber?: number;
     branch: string;
     sid_verification: boolean;
     enrolledSubjectId: string[];
-    teacherSubjectMap: Record<string, mongoose.Schema.Types.ObjectId>;
+    subjectTeacherMap: Record<string, mongoose.Schema.Types.ObjectId>;
     attendanceSubjectMap: Record<number, string>;
-    marksStudentMap: Record<string, MarksEntry>;
     clubsPartOf: mongoose.Schema.Types.ObjectId[];
     interestedEvents: mongoose.Schema.Types.ObjectId[];
     clubsHeadOf: mongoose.Schema.Types.ObjectId[];
+    profile?: string;
+    friends: mongoose.Schema.Types.ObjectId[];
 }
 
-const MarksEntrySchema = new Schema({
-    midsem: { type: Number, required: true },
-    endsem: { type: Number, required: true },
-    quiz1: { type: Number, required: true },
-    quiz2: { type: Number },
-    quiz3: { type: Number },
-    quiz4: { type: Number },
-    labquiz1: { type: Number, required: true },
-    labquiz2: { type: Number },
-});
 
 const StudentSchema: Schema<Student> = new Schema({
     user_id: {
         type: Schema.Types.ObjectId,
         ref: "User",
         required: true,
+    },
+    email:{
+        type:String,required:false
     },
     name: { type: String, required: true },
     student_id: { type: String, unique: true },
@@ -146,7 +186,7 @@ const StudentSchema: Schema<Student> = new Schema({
     branch: { type: String, required: true },
     sid_verification: { type: Boolean, default: false },
     enrolledSubjectId: [{ type: String }],
-    teacherSubjectMap: {
+    subjectTeacherMap: {
         type: Map,
         of: Schema.Types.ObjectId,
     },
@@ -154,22 +194,24 @@ const StudentSchema: Schema<Student> = new Schema({
         type: Map,
         of: String,
     },
-    marksStudentMap: {
-        type: Map,
-        of: MarksEntrySchema,
-    },
     clubsPartOf: [{ type: Schema.Types.ObjectId, ref: "Club" }],
     interestedEvents: [{ type: Schema.Types.ObjectId, ref: "Event" }],
     clubsHeadOf: [{ type: Schema.Types.ObjectId, ref: "Club" }],
+    profile: {
+        type: String,
+        required: false,
+    },
+    friends: [{ type: Schema.Types.ObjectId, ref: "Student" }],
 });
 
 
 export interface Teacher extends Document {
     user_id: mongoose.Schema.Types.ObjectId;
     teacher_id: string;
-    admin_verification: boolean;
-    subjectTeaching: string[];
-    // StudentsMarksMap: Record<string, MarksStudentMap>;
+    subjectTeaching: {
+        subject_code: string;
+        subject_name: string;
+    }[];
 }
 
 const TeacherSchema: Schema<Teacher> = new Schema({
@@ -179,34 +221,27 @@ const TeacherSchema: Schema<Teacher> = new Schema({
         required: true,
     },
     teacher_id: { type: String, required: true, unique: true },
-    admin_verification: { type: Boolean, default: false },
-    subjectTeaching: [{ type: String }],
-    // StudentsMarksMap: {
-    //     type: Map,
-    //     of: {
-    //         midsem: {
-    //             type: Map,
-    //             of: Number,
-    //         },
-    //         endsem: {
-    //             type: Map,
-    //             of: Number,
-    //         },
-    //     },
-    // },
+    subjectTeaching: [
+        {
+            subject_name: { type: String, required: true },
+            subject_code: { type: String, required: true },
+        },
+    ]
 });
 
 export interface Club extends Document {
     clubName: string;
-    clubIdSecs: mongoose.Schema.Types.ObjectId[];
-    clubMembers: mongoose.Schema.Types.ObjectId[];
+    clubLogo?: string;
+    clubIdSecs: string[];
+    clubMembers: string[];
     clubEvents: mongoose.Schema.Types.ObjectId[];
 }
 
 const ClubSchema: Schema<Club> = new Schema({
     clubName: { type: String, required: true, unique: true },
-    clubIdSecs: [{ type: Schema.Types.ObjectId, ref: "Student" }],
-    clubMembers: [{ type: Schema.Types.ObjectId, ref: "Student" }],
+    clubLogo: { type: String },
+    clubIdSecs: [{ type: String, ref: "Student" }],
+    clubMembers: [{ type: String, ref: "Student" }],
     clubEvents: [{ type: Schema.Types.ObjectId, ref: "Event" }],
 });
 export interface Event extends Document {
@@ -230,10 +265,179 @@ const EventSchema: Schema<Event> = new Schema({
     eventTime: { type: Date, required: true },
     interestedMembersArr: [{ type: Schema.Types.ObjectId, ref: "Student" }],
     eventAttachments: [{ type: String }],
+    poster: { type: String, required: true },
     heading: { type: String, required: true },
     description: { type: String, required: true },
     tags: [{ type: String }],
 });
+
+
+
+export interface Subject extends Document {
+  subjectId: string;
+  allMarks: {
+    examType: string;
+    studentMarks: {
+      student_id: string;
+      marks: number;
+    }[];
+  }[];
+}
+
+const SubjectSchema: Schema<Subject> = new Schema({
+    subjectId: { type: String, required: true },
+    allMarks: {
+      type: [
+        {
+          examType: { type: String, required: true },
+          studentMarks: [
+            {
+              student_id: { type: String, required: true },
+              marks: { type: Number, required: true },
+            },
+          ],
+        },
+      ],
+      default: [],
+    },
+  });
+
+
+
+export interface Attendance extends Document {
+    subjectId: string;
+    teacherId: mongoose.Schema.Types.ObjectId;
+    totalClasses: number;
+    dateStudentMap: {
+        date: string;
+        studentsPresent: string[];
+        lectureCount: number;
+    }[];
+    groupName: string;
+}
+
+const AttendanceSchema: Schema<Attendance> = new Schema({
+    subjectId: { type: String, required: true },
+    teacherId: { type: Schema.Types.ObjectId, ref: "Teacher", required: true }, // teacher ki user id
+    totalClasses: { type: Number, required: true },
+    dateStudentMap: [{
+        date: { type: String, required: true },
+        studentsPresent: [{ type: String }],
+        lectureCount: { type: Number, required: true },
+    }],
+    groupName: { type: String, required: true },
+});
+
+
+interface Resource extends Document {
+    subjectId: string;
+    files: {
+        url: string;
+        fileName: string;
+    }[];
+}
+
+const ResourceSchema: Schema<Resource> = new Schema({
+    subjectId: { type: String, required: true },
+    files: [{
+        url: { type: String, required: true },
+        fileName: { type: String, required: true },
+    }],
+})
+
+
+export interface Request extends Document {
+    user_id: mongoose.Schema.Types.ObjectId;
+    for_teacher: boolean;
+    for_admin: boolean;
+}
+
+const RequestSchema: Schema<Request> = new Schema({
+    user_id: {type: Schema.Types.ObjectId, ref: "User" },
+    for_teacher: {type: "boolean", default: false},
+    for_admin: {type: "boolean", default: false},
+})
+
+
+
+export interface FriendRequest extends Document {
+    from: mongoose.Schema.Types.ObjectId;
+    to: mongoose.Schema.Types.ObjectId;
+}
+
+const FriendRequestSchema: Schema<FriendRequest> = new Schema({
+    from: {type: Schema.Types.ObjectId, ref: "Student" },
+    to: {type: Schema.Types.ObjectId, ref: "Student" },
+})
+
+
+export interface Issue extends Document {
+    title: string;
+    description: string;
+    attachments: string[];
+    author: mongoose.Schema.Types.ObjectId;
+    votes: mongoose.Schema.Types.ObjectId[];
+}
+
+const IssueSchema: Schema<Issue> = new Schema({
+    title: { type: String, required: true },
+    description: { type: String, required: true },
+    attachments: [{ type: String }],
+    author: { type: Schema.Types.ObjectId, ref: "Student" }, //userId
+    votes: [{ type: Schema.Types.ObjectId, ref: "Student" }], //userId
+}, {timestamps: true})
+
+interface Eventai {
+    title: string;
+    description: string;
+}
+
+interface Markai {
+    subject: string;
+    marks: string;
+}
+
+interface Generalai {
+    title: string;
+    description: string;
+}
+
+interface Info {
+    events?: Eventai[];
+    marks?: Markai[];
+    general?: Generalai[];
+}
+
+export interface AiChatBot extends Document {
+    Info: Info;
+}
+
+const EventSchemaAI = new Schema<Eventai>({
+    title: { type: String, required: true },
+    description: { type: String, required: true },
+});
+
+const MarkSchemaAI = new Schema<Markai>({
+    subject: { type: String, required: true },
+    marks: { type: String, required: true },
+});
+
+const GeneralSchemaAI = new Schema<Generalai>({
+    title: { type: String, required: true },
+    description: { type: String, required: true },
+});
+
+const AiChatBotSchema: Schema<AiChatBot> = new Schema({
+    Info: {
+        events: [EventSchemaAI],
+        marks: [MarkSchemaAI],
+        general: [GeneralSchemaAI],
+    }},
+    { collection: 'aiChatBot' }
+);
+
+const aiChatBotModel: Model<AiChatBot> =
+    mongoose.models.aiChatBot || mongoose.model<AiChatBot>("aiChatBot", AiChatBotSchema);
 
 const UserModel: Model<User> =
     mongoose.models.User || mongoose.model<User>("User", UserSchema);
@@ -245,10 +449,28 @@ const TeacherModel: Model<Teacher> =
     mongoose.models.Teacher || mongoose.model<Teacher>("Teacher", TeacherSchema);
 
 const ClubModel: Model<Club> =
-    mongoose.models.Club || mongoose.model<Club>("Club", ClubSchema);
+    mongoose.models.Club|| mongoose.model<Club>("Club", ClubSchema);
 
 const EventModel: Model<Event> =
     mongoose.models.Event || mongoose.model<Event>("Event", EventSchema);
+
+const SubjectModel : Model<Subject>=
+    mongoose.models.Subject || mongoose.model<Subject>("Subject",SubjectSchema);
+
+const AttendanceModel: Model<Attendance> =
+    mongoose.models.Attendance || mongoose.model<Attendance>("Attendance", AttendanceSchema);
+
+const RequestModel: Model<Request> =
+    mongoose.models.Request || mongoose.model<Request>("Request", RequestSchema);
+
+const FriendRequestModel: Model<FriendRequest> =
+    mongoose.models.FriendRequest || mongoose.model<FriendRequest>("FriendRequest", FriendRequestSchema);
+
+const ResourceModel: Model<Resource> =
+    mongoose.models.Resource || mongoose.model<Resource>("Resource", ResourceSchema);
+
+const IssueModel: Model<Issue> =
+    mongoose.models.Issue || mongoose.model<Issue>("Issue", IssueSchema);
 
 export {
     UserModel,
@@ -256,4 +478,11 @@ export {
     TeacherModel,
     ClubModel,
     EventModel,
+    SubjectModel,
+    AttendanceModel,
+    RequestModel,
+    FriendRequestModel,
+    aiChatBotModel,
+    ResourceModel,
+    IssueModel,
 };

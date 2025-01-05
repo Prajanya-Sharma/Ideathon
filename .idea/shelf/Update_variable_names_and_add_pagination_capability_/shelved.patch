@@ -1,0 +1,29 @@
+Index: store/atoms/filteredEvents.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import {selector} from \"recoil\";\nimport {eventsState} from \"./event\";\nimport {eventFilterState} from \"./eventFilter\";\n\nexport const filteredEventsState = selector({\n  key: \"filteredEventsState\",\n  get: ({ get }) => {\n    const events = get(eventsState)\n    const filters = get(eventFilterState)\n\n    return events.filter((event) => event.tags.some((tag) => filters.tags.includes(tag)));\n  }\n})
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/store/atoms/filteredEvents.ts b/store/atoms/filteredEvents.ts
+--- a/store/atoms/filteredEvents.ts	(revision c9d9b9a3cb1a088b11aee43b06dbd67605b31998)
++++ b/store/atoms/filteredEvents.ts	(date 1734808989380)
+@@ -1,5 +1,5 @@
+ import {selector} from "recoil";
+-import {eventsState} from "./event";
++import {eventsState, pageState} from "./event";
+ import {eventFilterState} from "./eventFilter";
+ 
+ export const filteredEventsState = selector({
+@@ -7,7 +7,9 @@
+   get: ({ get }) => {
+     const events = get(eventsState)
+     const filters = get(eventFilterState)
++    const page = get(pageState)
+ 
+-    return events.filter((event) => event.tags.some((tag) => filters.tags.includes(tag)));
++    // return events.filter((event) => event.tags.some((tag) => filters.tags.includes(tag))).slice((page - 1) * 10, page * 10);
++    return events;
+   }
+ })
+\ No newline at end of file

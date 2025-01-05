@@ -5,21 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3d45d623-ee8a-421e-8d0d-07f88c3fd10c" name="Changes" comment="fixup! recovered files">
-      <change afterPath="$PROJECT_DIR$/app/api/club/head/route.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/events/[...eventId]/page.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/context/StoreProvider.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/lib/cloudinary.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_12_11_24,_8_46 PM_[Changes]/shelved.patch" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_12_11_24__8_46PM__Changes_.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/add-event/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/add-event/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/events/add-event/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/events/add-event/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/dashboard/student/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/dashboard/student/page.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/layout.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/components/events/eventPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/events/eventPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/model/User.ts" beforeDir="false" afterPath="$PROJECT_DIR$/model/User.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/chatBot/chatBot.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/chatBot/chatBot.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/context/StoreProvider.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/middleware.ts" beforeDir="false" afterPath="$PROJECT_DIR$/middleware.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -29,15 +19,15 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="TypeScript File" />
         <option value="TypeScript JSX File" />
+        <option value="TypeScript File" />
       </list>
     </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="f40caa737c0b869e3b7b6977b0cbcaceb80c7219" />
+        <entry key="$PROJECT_DIR$" value="css-testing" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -56,7 +46,7 @@
   }
 }</component>
   <component name="ProblemsViewState">
-    <option name="selectedTabId" value="CurrentFile" />
+    <option name="selectedTabId" value="DEPENDENCY_CHECKER_PROBLEMS_TAB" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 5
@@ -71,7 +61,7 @@
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/home/vaibhav-verma/WebstormProjects/week-16-1&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/vaibhav-verma/WebstormProjects/ideathon/app/api/admin/user&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -82,8 +72,15 @@
   }
 }</component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/app/api/admin/user" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/components/club" />
+      <recent name="$PROJECT_DIR$/app/api/teacher/subjects/groups/[...subjectId]" />
+      <recent name="$PROJECT_DIR$/app/api/teacher" />
+      <recent name="$PROJECT_DIR$/app/api/admin/subjects/teacher" />
+      <recent name="$PROJECT_DIR$/app/admin" />
+      <recent name="$PROJECT_DIR$/app/events" />
     </key>
   </component>
   <component name="SharedIndexes">
@@ -130,7 +127,53 @@
       <workItem from="1734587553335" duration="2223000" />
       <workItem from="1734622604490" duration="6450000" />
       <workItem from="1734672636682" duration="3862000" />
-      <workItem from="1734697995805" duration="2454000" />
+      <workItem from="1734697995805" duration="4210000" />
+      <workItem from="1734709695437" duration="1288000" />
+      <workItem from="1734719253317" duration="6275000" />
+      <workItem from="1734766424331" duration="15352000" />
+      <workItem from="1734859762039" duration="16109000" />
+      <workItem from="1734888157235" duration="1752000" />
+      <workItem from="1734936981008" duration="20081000" />
+      <workItem from="1735026512179" duration="9324000" />
+      <workItem from="1735048088338" duration="5248000" />
+      <workItem from="1735060156138" duration="2618000" />
+      <workItem from="1735064720771" duration="656000" />
+      <workItem from="1735106418820" duration="148000" />
+      <workItem from="1735141420059" duration="11523000" />
+      <workItem from="1735194562583" duration="6771000" />
+      <workItem from="1735224189800" duration="10335000" />
+      <workItem from="1735280126356" duration="8507000" />
+      <workItem from="1735312870855" duration="4460000" />
+      <workItem from="1735327415197" duration="5118000" />
+      <workItem from="1735368401501" duration="8272000" />
+      <workItem from="1735394000412" duration="72000" />
+      <workItem from="1735395983128" duration="5172000" />
+      <workItem from="1735411913079" duration="275000" />
+      <workItem from="1735412199180" duration="4549000" />
+      <workItem from="1735456473928" duration="2596000" />
+      <workItem from="1735473072434" duration="168000" />
+      <workItem from="1735476153656" duration="3525000" />
+      <workItem from="1735481667323" duration="351000" />
+      <workItem from="1735490418912" duration="13947000" />
+      <workItem from="1735551425427" duration="1037000" />
+      <workItem from="1735573605003" duration="15386000" />
+      <workItem from="1735630632922" duration="3068000" />
+      <workItem from="1735646800736" duration="2798000" />
+      <workItem from="1735662088128" duration="1184000" />
+      <workItem from="1735671274748" duration="238000" />
+      <workItem from="1735719997150" duration="3868000" />
+      <workItem from="1735738596357" duration="21727000" />
+      <workItem from="1735803780445" duration="3957000" />
+      <workItem from="1735834776101" duration="1436000" />
+      <workItem from="1735887939114" duration="9151000" />
+      <workItem from="1735912253570" duration="2503000" />
+      <workItem from="1735936579519" duration="4282000" />
+      <workItem from="1735976191219" duration="1696000" />
+      <workItem from="1735985050166" duration="4726000" />
+      <workItem from="1736003028073" duration="54000" />
+      <workItem from="1736005381956" duration="622000" />
+      <workItem from="1736015697437" duration="8495000" />
+      <workItem from="1736059367137" duration="8324000" />
     </task>
     <servers />
   </component>
@@ -138,7 +181,6 @@
     <option name="version" value="3" />
     <option name="exactExcludedFiles">
       <list>
-        <option value="$PROJECT_DIR$/next.config.mjs" />
         <option value="$PROJECT_DIR$/next.config.mjs" />
       </list>
     </option>
