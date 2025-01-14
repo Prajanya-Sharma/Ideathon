@@ -6,8 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="3d45d623-ee8a-421e-8d0d-07f88c3fd10c" name="Changes" comment="fixup! recovered files">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/(auth)/verify-sid/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/(auth)/verify-sid/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/study-requests/[...studyRequestId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/study-requests/[...studyRequestId]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/navbar/Navbar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/navbar/Navbar.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -76,11 +75,11 @@
       <recent name="$PROJECT_DIR$/app/api/admin/user" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/app/user/friends" />
       <recent name="$PROJECT_DIR$/app/admin" />
       <recent name="$PROJECT_DIR$/app/teacher/announcements/edit/[...id]" />
       <recent name="$PROJECT_DIR$/app/api/user" />
       <recent name="$PROJECT_DIR$/app/api/study-requests/accepted-requests/[...acceptedStudyRequestId]" />
-      <recent name="$PROJECT_DIR$/app/api/study-requests/my-requests" />
     </key>
   </component>
   <component name="SharedIndexes">
@@ -194,6 +193,7 @@
       <workItem from="1736779876545" duration="17843000" />
       <workItem from="1736827225342" duration="2213000" />
       <workItem from="1736841852981" duration="1575000" />
+      <workItem from="1736869453749" duration="2436000" />
     </task>
     <servers />
   </component>

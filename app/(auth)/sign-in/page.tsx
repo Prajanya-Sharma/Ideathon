@@ -55,8 +55,7 @@ export default function SignInForm() {
     }
 
     if (result?.url) {
-      router.replace('/sign-in');
-    }
+      router.replace('/sign-in');}
   };
 
   return (

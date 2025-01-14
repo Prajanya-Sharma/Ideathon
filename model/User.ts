@@ -152,6 +152,7 @@ export interface Student extends Document {
     user_id: mongoose.Schema.Types.ObjectId;
     email?:string;
     name?:string;
+    avatar?: string;
     student_id?: string;
     semester: number;
     phoneNumber?: number;
@@ -178,6 +179,7 @@ const StudentSchema: Schema<Student> = new Schema({
         type:String,required:false
     },
     name: { type: String, required: true },
+    avatar: { type: String },
     student_id: { type: String, unique: true },
     semester: { type: Number, required: true },
     phoneNumber: { type: Number },

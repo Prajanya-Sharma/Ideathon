@@ -1,4 +1,6 @@
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+
 export default function Logo() {
   const router = useRouter();
 
@@ -11,27 +13,19 @@ export default function Logo() {
       onClick={navigateToHome}
       className="font-kaap-sam text-white font-bold cursor-pointer text-xl"
     >
-      Campus Companion
+      <div
+        style={{
+          display: "inline-block",
+        }}
+      >
+        <Image
+          src="/images/logo.png" 
+          alt="Logo"
+          width={240} // Set the width
+          height={60} // Set the height
+          priority 
+        />
+      </div>
     </div>
   );
 }
-
-//IF logo is available
-//<div
-//   style={{
-//     backgroundColor: "white",
-//     display: "inline-block",
-//   }}
-// >
-{
-  /* <Image 
-        onClick={() => router.push("/")}
-        alt="Logo"
-        className="hidden md:block cursor-pointer"
-        height="75"
-        width="120"
-        src="/images/logo.png"
-      /> */
-}
-
-// </div>

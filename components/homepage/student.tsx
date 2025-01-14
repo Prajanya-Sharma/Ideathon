@@ -146,6 +146,7 @@ export default function StudentHomePage() {
             </p>
             <button
               className="mt-4 bg-orange-600 hover:bg-orange-700 text-white py-2 px-4 rounded-lg"
+              onClick={() => router.push("/user/attendance")}
             >
               Track Attendance
             </button>
@@ -175,7 +176,7 @@ export default function StudentHomePage() {
             </p>
             <button
               className="mt-4 bg-pink-600 hover:bg-pink-700 text-white py-2 px-4 rounded-lg"
-              onClick={() => router.push("/MAP")}
+              onClick={() => router.push("/user/friends")}
             >
               Find Friends
             </button>

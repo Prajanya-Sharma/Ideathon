@@ -7,7 +7,7 @@ import UserMenu from "./UserMenu";
 interface NavbarProps {}
 const Navbar: React.FC<NavbarProps> = ({}) => {
   return (
-    <div className="bg-gradient-to-r from-black via-gray-900 to-black text-white p-6 sticky top-0 z-10">
+    <div className="bg-black text-white p-4 sticky top-0 z-10 border-b-2 border-blue-500">
       <div
         className="flex
         flex-row
@@ -16,7 +16,8 @@ const Navbar: React.FC<NavbarProps> = ({}) => {
         gap-3
         md:gap-0"
       >
-        <Logo />
+        <div className="flex flex-row px-8 items-center gap-3">
+        <Logo /> </div>
         <UserMenu />
       </div>
       <Categories />

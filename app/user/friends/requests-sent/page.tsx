@@ -1,9 +1,9 @@
 "use client"
 import {useEffect} from "react";
-import {useModel} from "../../../hooks/user-model-store";
+import {useModel} from "../../../../hooks/user-model-store";
 import {useRouter} from "next/navigation";
 import axios from "axios";
-import DotsLoader from "../../../components/loading/dotLoader";
+import DotsLoader from "@components/loading/dotLoader";
 export default function RequestsSentPage() {
   const { requestsSent, setRequestsSent, setLoading } = useModel()
   const router = useRouter();

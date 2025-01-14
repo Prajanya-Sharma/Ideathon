@@ -1,9 +1,9 @@
 "use client"
-import {useModel} from "../../../hooks/user-model-store";
+import {useModel} from "../../../../hooks/user-model-store";
 import {useRouter} from "next/navigation";
 import {useEffect} from "react";
 import axios from "axios";
-import DotsLoader from "../../../components/loading/dotLoader";
+import DotsLoader from "@components/loading/dotLoader";
 export default function FriendRequests() {
   const { currentRequests, setCurrentRequests, setLoading } = useModel()
   const router = useRouter();

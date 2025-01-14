@@ -8,9 +8,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { label: "Friends", href: "/user/friends", color: "bg-blue-600 hover:bg-blue-700" },
-    { label: "Add Friends", href: "/user/add-friends", color: "bg-blue-600 hover:bg-blue-700" },
-    { label: "Friend Requests", href: "/user/friend-requests", color: "bg-blue-600 hover:bg-blue-700" },
-    { label: "Requests Sent", href: "/user/requests-sent", color: "bg-blue-600 hover:bg-blue-700" },
+    { label: "Add Friends", href: "/user/friends/add-friends", color: "bg-blue-600 hover:bg-blue-700" },
+    { label: "Friend Requests", href: "/user/friends/friend-requests", color: "bg-blue-600 hover:bg-blue-700" },
+    { label: "Requests Sent", href: "/user/friends/requests-sent", color: "bg-blue-600 hover:bg-blue-700" },
   ];
 
   return (

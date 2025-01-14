@@ -1,30 +1,20 @@
 "use client";
-import io, { Socket } from "socket.io-client";
+
 import { useEffect } from "react";
 import axios from "axios";
 import DotsLoader from "../../../components/loading/dotLoader";
 import { useRouter } from "next/navigation";
-import { useModel } from "@/hooks/user-model-store";
-
-let socket: typeof Socket;
+import {useModel} from "@/hooks/user-model-store";
 
 export default function AcceptedRequestsToTeachPage() {
-  const { isLoading, setLoading, acceptedRequestsToTeach, setAcceptedRequestsToTeach } = useModel();
+  const { isLoading, setLoading, acceptedRequestsToTeach, setAcceptedRequestsToTeach} = useModel();
   const router = useRouter();
-
-  useEffect(() => {
-    socket = io("http://localhost:4000", {
-      allowEIO3: true,
-    });
-  }, []);
 
   useEffect(() => {
     async function fetchAcceptedRequestsToTeach() {
       setLoading(true);
       try {
-        const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/study-requests/accepted-requests-to-teach`
-        );
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/accepted-requests-to-teach`);
         if (res.status === 200) {
           setAcceptedRequestsToTeach(res.data);
         } else {
@@ -40,28 +30,6 @@ export default function AcceptedRequestsToTeachPage() {
     fetchAcceptedRequestsToTeach();
   }, [setAcceptedRequestsToTeach, setLoading]);
 
-  const handleCancelMeeting = async (requestId: string) => {
-    try {
-      const res = await axios.patch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/study-requests/accepted-requests-to-teach/${requestId}`
-      );
-      if (res.status === 200) {
-        setAcceptedRequestsToTeach(
-          acceptedRequestsToTeach.filter((request) => request._id.toString() !== requestId)
-        );
-      } else {
-        console.error("Failed to cancel the meeting");
-      }
-    } catch (error) {
-      console.error("Error canceling the meeting:", error);
-    }
-  };
-
-  const handleJoinRoom = (roomId: string) => {
-    socket.emit("join-room", roomId);
-    router.push(`/study-room/${roomId}`);
-  };
-
   if (isLoading) {
     return <DotsLoader />;
   }
@@ -69,7 +37,7 @@ export default function AcceptedRequestsToTeachPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black text-white">
       {/* Page Header */}
-      <div className="w-full py-8 bg-gray-950 shadow-lg">
+      <div className="w-full py-10 bg-gray-950 shadow-lg">
         <h1 className="text-3xl font-extrabold text-blue-500 text-center">
           Accepted Requests to Teach
         </h1>
@@ -93,17 +61,14 @@ export default function AcceptedRequestsToTeachPage() {
                   Semester: {request.student.semester}, Branch: {request.student.branch}
                 </p>
                 <p className="text-sm text-gray-500 mt-2">
-                  Subject:{" "}
-                  <span className="font-semibold text-white">{request.subjectName}</span>
+                  Subject: <span className="font-semibold text-white">{request.subjectName}</span>
                 </p>
                 <p className="text-sm text-gray-400 mt-2">{request.description}</p>
 
                 {/* Attachments */}
                 {request.studentAttachments.length > 0 && (
                   <div className="mt-4">
-                    <h3 className="text-sm text-gray-300 font-semibold">
-                      Student Attachments:
-                    </h3>
+                    <h3 className="text-sm text-gray-300 font-semibold">Student Attachments:</h3>
                     <ul className="list-disc list-inside mt-2 space-y-1">
                       {request.studentAttachments.map((attachment, index) => (
                         <li key={index}>
@@ -123,9 +88,7 @@ export default function AcceptedRequestsToTeachPage() {
 
                 {request.teacherAttachments.length > 0 && (
                   <div className="mt-4">
-                    <h3 className="text-sm text-gray-300 font-semibold">
-                      Teacher Attachments:
-                    </h3>
+                    <h3 className="text-sm text-gray-300 font-semibold">Teacher Attachments:</h3>
                     <ul className="list-disc list-inside mt-2 space-y-1">
                       {request.teacherAttachments.map((attachment, index) => (
                         <li key={index}>
@@ -144,21 +107,14 @@ export default function AcceptedRequestsToTeachPage() {
                 )}
 
                 <p className="text-sm text-gray-500 mt-2">
-                  Student&#39;s Phone:{" "}
-                  <span className="font-semibold text-white">{request.studentPhoneNumber}</span>
+                  Student&#39;s Phone: <span className="font-semibold text-white">{request.studentPhoneNumber}</span>
                 </p>
 
-                {/* Buttons */}
-                <div className="mt-6 flex justify-end gap-4">
+                {/* Join Room Button */}
+                <div className="mt-6 flex justify-end">
                   <button
-                    className="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-semibold shadow-lg transition-all duration-300"
-                    onClick={() => handleCancelMeeting(request._id.toString())}
-                  >
-                    Cancel Meeting
-                  </button>
-                  <button
-                    className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-semibold shadow-lg transition-all duration-300"
-                    onClick={() => handleJoinRoom(request.roomId)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded-lg font-semibold shadow-lg transition-all duration-300"
+                    onClick={() => router.push(`/study-room/${request.roomId}`)}
                   >
                     Join Room
                   </button>

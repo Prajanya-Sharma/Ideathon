@@ -7,23 +7,23 @@ import { useCallback, useState } from "react";
 
 function UserMenu() {
   const [isOpen, setIsOpen] = useState(false);
-  const { data: session } = useSession(); // Get session data
+  const { data: session } = useSession();
   const router = useRouter();
 
   const toggleOpen = useCallback(() => {
     setIsOpen((prev) => !prev);
   }, []);
 
-  const handleSignOut = () => {
-    signOut(); // Logs out the user
+  const handleSignOut = async () => {
+    await signOut({ redirect: false }); // Prevent NextAuth's default redirect
+    router.push('/sign-in'); // Redirect to sign-in page after signout completes
   };
+
   console.log(session);
-  
 
   return (
     <div className="relative z-20 ml-4">
       <div className="flex flex-row items-center gap-3">
-        {/* Show username if user is signed in, otherwise show "Guest" */}
         <button
           onClick={() => router.push('/dashboard/student')}
           className="hidden md:block text-white text-sm font-semibold py-3 px-4 rounded-full hover:bg-blue-600 hover:text-white transition cursor-pointer"
