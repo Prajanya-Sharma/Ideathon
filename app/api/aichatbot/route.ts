@@ -29,20 +29,30 @@ const embeddings = new GoogleGenerativeAIEmbeddings({
 });
 
 // Helper function to classify queries
-const classifyQuery = (query: string): string => {
-  const queryLower = query.toLowerCase();
-  const categories = {
-    marks: ['marks', 'exam', 'quiz', 'midsem', 'endsem', 'practical', 'score', 'result', 'grade', 'percentage', 'subject', 'course', 'gradebook', 'gpa', 'cgpa'],
-    events: ['event', 'club', 'workshop', 'fest', 'competition', 'seminar', 'meetup', 'activity', 'schedule', 'venue', 'date', 'time', 'host', 'organizer', 'participation', 'registration'],
-    general: ['information', 'college', 'timing', 'library', 'administration', 'contact', 'schedule', 'chat', 'help', 'bot', 'assistant', 'chatbot']
-  };
+const classifyQuery = async (query: string): Promise<string> => {
+  // const queryLower = query.toLowerCase();
+  // const categories = {
+  //   marks: ['marks', 'exam', 'quiz', 'midsem', 'endsem', 'practical', 'score', 'result', 'grade', 'percentage', 'subject', 'course', 'gradebook', 'gpa', 'cgpa'],
+  //   events: ['event', 'club', 'workshop', 'fest', 'competition', 'seminar', 'meetup', 'activity', 'schedule', 'venue', 'date', 'time', 'host', 'organizer', 'participation', 'registration'],
+  //   general: ['information', 'college', 'timing', 'library', 'administration', 'contact', 'schedule', 'chat', 'help', 'bot', 'assistant', 'chatbot']
+  // };
 
-  for (const [category, keywords] of Object.entries(categories)) {
-    if (keywords.some(keyword => queryLower.includes(keyword))) {
-      return category;
-    }
-  }
-  return 'general';
+  // for (const [category, keywords] of Object.entries(categories)) {
+  //   if (keywords.some(keyword => queryLower.includes(keyword))) {
+  //     return category;
+  //   }
+  // }
+  // return 'general';
+
+  const prompt = `I am providing you a query, based on the query your work is detect whether that is related to marks, events or general information. \n\nQuery: ${query} \n\nPlease type marks, events or general based on the query. \n\nPlease type only one of the three words and dont type any other text. \n\nIf you are not sure, you can type general.`;
+
+  const completion = await groqClient.chat.completions.create({
+  messages: [{ role: 'user', content: prompt }],
+  model: 'llama3-8b-8192',
+  });
+  const category = completion.choices[0]?.message?.content;
+  console.log(category);
+  return category || 'general';
 };
 
 const ensureCollection = async (
@@ -210,7 +220,7 @@ const getBotResponse = async (
                      If the context is about marks, provide only the student's marks, name, roll number, 
                      and subject details.
                      For events, include the hosting club, venue, date/time, 
-                     and a brief description (max 100 words).
+                     and a brief description and the link to the event (max 100 words).
                      If the context is about general information, provide a brief description of the topic.`;
 
       const completion = await groqClient.chat.completions.create({
@@ -279,8 +289,8 @@ export async function POST(request: Request) {
     const updatedInput = processUserInput(userInput, 'my', Username?.toLowerCase() || 'student'); 
     userInput = updatedInput;
 
-    const category = classifyQuery(userInput);
-    if(category === 'marks' && !teacher){
+    const category = await classifyQuery(userInput);
+    if (category === 'marks' && !teacher) {
       const isUserOwner = classifySID(userInput, student);
       console.log("Category:", isUserOwner);
       if(isUserOwner === false){

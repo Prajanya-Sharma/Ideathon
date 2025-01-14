@@ -2,29 +2,47 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
-import {useParams, useRouter} from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { CldUploadButton } from "next-cloudinary";
-import { useModel } from "../../../../hooks/user-model-store";
-import NavigatorButton from "../../../../components/general/navigator";
-import DotsLoader from "@/components/loading/dotLoader"; // Import the NavigatorButton component
+import NavigatorButton from "@/components/general/navigator";
+import DotsLoader from "@/components/loading/dotLoader";
+import EventMap from '../../../test/page'
 
 export default function EditEventPage() {
-  const { setSingleEvent, singleEvent } = useModel();
-  const params = useParams();
-  const router = useRouter();
-  const eventId = params.eventId?.[0];
+  const [eventCoordinates, setEventCoordinates] = useState<{ lat: number; lng: number } | null>(null);
+  const [eventVenue, setEventVenue] = useState<string>("");
   const [eventHostedBy, setEventHostedBy] = useState<string>("");
-  const [tag1, setTag1] = useState<string>("");
-  const [tag2, setTag2] = useState<string>("");
-  const [tag3, setTag3] = useState<string>("");
+  const [tags, setTags] = useState<string[]>([]);
   const [heading, setHeading] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [poster, setPoster] = useState<string>("");
   const [eventAttachments, setEventAttachments] = useState<string[]>([]);
-  const [eventVenue, setEventVenue] = useState<string>("");
+  const [clubs, setClubs] = useState<{ clubName: string }[]>([]);
   const [date, setDate] = useState<string>("");
   const [time, setTime] = useState<string>("");
+  const router = useRouter();
+  const { eventId } = useParams();
 
+  const uploadPreset = process.env.NEXT_PUBLIC_CLOUDNARY_UPLOAD_PRESET as string;
+
+  // Handle upload success for poster
+  function handlePosterUpload(result: any) {
+    if (result.event === "success") setPoster(result.info.secure_url);
+  }
+
+  // Handle upload success for event attachments
+  function handleEventAttachmentsUpload(result: any) {
+    if (result.event === "success") {
+      setEventAttachments((prev) => [...prev, result.info.secure_url]);
+    }
+  }
+
+  // Handle the location selection from the map
+  function handleLocationSelect(lat: number, lng: number) {
+    setEventCoordinates({ lat, lng });
+  }
+
+  // Fetch event details for editing
   useEffect(() => {
     if (!eventId) return;
 
@@ -32,9 +50,6 @@ export default function EditEventPage() {
       try {
         const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/events/${eventId}`);
         const event = response.data.data;
-        setSingleEvent(event);
-
-        // Pre-fill form with the fetched event details
         setEventHostedBy(event.eventHostedBy);
         setHeading(event.heading);
         setDescription(event.description);
@@ -43,71 +58,72 @@ export default function EditEventPage() {
         setEventAttachments(event.eventAttachments);
         setDate(event.eventTime.slice(0, 10));
         setTime(event.eventTime.slice(11, 16));
-        setTag1(event.tags[0] || "");
-        setTag2(event.tags[1] || "");
-        setTag3(event.tags[2] || "");
+        setTags(event.tags || []);
+        setEventCoordinates(event.eventCoordinates);
       } catch (error) {
         console.error("Error fetching event details:", error);
       }
     };
 
     fetchEventDetails();
-  }, [eventId, params, setSingleEvent]);
+  }, [eventId]);
 
-
-  function handlePosterUpload(result: any) {
-    if (result.event === "success") {
-      setPoster(result.info.secure_url);
+  // Fetch clubs for event hosting options
+  async function fetchClubs() {
+    try {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/clubs/head`);
+      if (response.status === 403) router.push("/");
+      setClubs(response.data);
+    } catch (err) {
+      console.error(err);
+      router.push("/");
     }
   }
 
-  function handleEventAttachmentsUpload(result: any) {
-    if (result.event === "success") {
-      setEventAttachments((prev) => [...prev, result.info.secure_url]);
-    }
-  }
+  useEffect(() => {
+    fetchClubs();
+  }, []);
 
-  async function handleSaveEvent() {
+  // Save event details after editing
+  async function handleEditEvent() {
     if (!poster || !date || !time || !eventHostedBy || !description || !eventVenue) {
+      alert("Please fill all required fields.");
       return;
     }
 
-    const tags = [];
-    if (tag1 !== "") tags.push(tag1);
-    if (tag2 !== "") tags.push(tag2);
-    if (tag3 !== "") tags.push(tag3);
-
     const eventTime = new Date(`${date}T${time}`);
+    const payload = {
+      eventHostedBy,
+      poster,
+      heading,
+      tags,
+      description,
+      eventAttachments,
+      eventVenue,
+      eventTime,
+      eventCoordinates
+    };
 
     try {
-      const res = await axios.patch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/events/${eventId}`, {
-        poster,
-        heading,
-        tags,
-        description,
-        eventAttachments,
-        eventVenue,
-        eventTime,
-      });
+      const res = await axios.patch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/events/${eventId}`,
+        payload
+      );
 
-      if (res.status === 200) {
-        router.push(`/events/${eventId}`);
-      }
-    } catch (error) {
-      console.error("Error saving event:", error);
+      if (res.status === 200) router.push(`/events/${res.data._id}`);
+    } catch (err) {
+      console.error(err);
+      alert("Error editing the event. Please try again.");
     }
   }
 
-  if (!singleEvent) {
-    return <DotsLoader/>;
-  }
+  if (clubs.length === 0) return <DotsLoader />;
 
   const dropdownItems = [
     { label: "Events", href: "/events" },
-    { label: "Dashboard", href: "/dashboard" },
+    { label: "Dashboard", href: "/profile" },
     { label: "Home", href: "/" },
   ];
-
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-black to-[#0B0C10] p-4">
@@ -115,42 +131,48 @@ export default function EditEventPage() {
         <NavigatorButton buttonText="Navigate" dropdownItems={dropdownItems} />
       </div>
       <div className="w-full max-w-4xl p-6 bg-gradient-to-br from-[#1F2833] to-[#0B0C10] text-white rounded-lg shadow-xl">
-        {/* Header */}
         <h1 className="text-4xl font-bold text-center mb-8 text-gray-300">Edit Event</h1>
 
-        {/* Form Content */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Club Selection */}
-          <div className="space-y-4">
+          <div>
             <label className="block text-lg font-semibold text-gray-300">Select Club</label>
-            {eventHostedBy}
+            <select
+              value={eventHostedBy}
+              onChange={(e) => setEventHostedBy(e.target.value)}
+              className="w-full p-2 text-gray-300 rounded bg-[#1F2833] border border-blue-300 focus:ring-2 focus:ring-cyan-500"
+            >
+              <option value="">Select</option>
+              {clubs.map((club) => (
+                <option value={club.clubName} key={club.clubName}>
+                  {club.clubName}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* Tags */}
-          <div className="space-y-4">
-            <label className="block text-lg font-semibold  text-gray-300">Select Tags</label>
-            {[tag1, tag2, tag3].map((tag, index) => (
+          <div>
+            <label className="block text-lg font-semibold text-gray-300">Tags</label>
+            {[0, 1, 2].map((_, index) => (
               <select
                 key={index}
-                value={tag}
-                onChange={(e) =>
-                  index === 0
-                    ? setTag1(e.target.value)
-                    : index === 1
-                      ? setTag2(e.target.value)
-                      : setTag3(e.target.value)
-                }
+                value={tags[index] || ""}
+                onChange={(e) => {
+                  const newTags = [...tags];
+                  newTags[index] = e.target.value;
+                  setTags(newTags);
+                }}
                 className="w-full p-2 rounded bg-[#1F2833] border border-blue-300 focus:ring-2 focus:ring-cyan-500"
               >
-                {["Tech", "Coding", "Robotics", "Music", "Dance", "Art", "Comedy", ""].map((tag, index) => (
-                  <option value={tag} key={index}>{tag}</option>
+                {["Tech", "Coding", "Robotics", "Music", "Dance", "Art", "Comedy", ""].map((tag, idx) => (
+                  <option value={tag} key={idx}>
+                    {tag}
+                  </option>
                 ))}
               </select>
             ))}
           </div>
         </div>
 
-        {/* Event Details */}
         <div className="space-y-6 mt-8">
           <div>
             <label className="block text-lg font-semibold text-gray-300">Heading</label>
@@ -164,7 +186,7 @@ export default function EditEventPage() {
           </div>
 
           <div>
-            <label className="block text-lg font-semibold  text-gray-300">Description</label>
+            <label className="block text-lg font-semibold text-gray-300">Description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -175,7 +197,7 @@ export default function EditEventPage() {
           </div>
 
           <div>
-            <label className="block text-lg font-semibold  text-gray-300">Event Venue</label>
+            <label className="block text-lg font-semibold text-gray-300">Event Venue</label>
             <input
               value={eventVenue}
               onChange={(e) => setEventVenue(e.target.value)}
@@ -187,7 +209,7 @@ export default function EditEventPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <label className="block text-lg font-semibold  text-gray-300">Date</label>
+              <label className="block text-lg font-semibold text-gray-300">Date</label>
               <input
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
@@ -196,7 +218,7 @@ export default function EditEventPage() {
               />
             </div>
             <div>
-              <label className="block text-lg font-semibold  text-gray-300">Time</label>
+              <label className="block text-lg font-semibold text-gray-300">Time</label>
               <input
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
@@ -210,65 +232,46 @@ export default function EditEventPage() {
         {/* Poster & Attachments */}
         <div className="space-y-6 mt-8">
           <div className="flex items-center space-x-4">
-            <label className="block text-lg font-semibold  text-gray-300">Poster</label>
+            <label className="block text-lg font-semibold text-gray-300">Poster</label>
             <CldUploadButton
-              uploadPreset={
-                process.env.NEXT_PUBLIC_CLOUDNARY_UPLOAD_PRESET as string
-              }
-              onSuccess={handlePosterUpload}
-              className="px-4 py-2 bg-gradient-to-br from-cyan-800 to-blue-700 hover:from-blue-600 hover:to-cyan-600 text-white rounded shadow hover:scale-105 transform transition-all duration-300"
+              uploadPreset={uploadPreset}
+              onUpload={handlePosterUpload}
+              className="bg-[#0B0C10] text-white px-4 py-2 rounded-md cursor-pointer"
             >
-              Upload
+              Upload Poster
             </CldUploadButton>
           </div>
-          {poster && (
-            <div>
-              <label className="block text-lg font-semibold  text-gray-300">Uploaded Poster:</label>
-              <img src={poster} alt="Event Poster" className="w-full h-auto rounded-lg mt-2" />
-            </div>
-          )}
 
           <div className="flex items-center space-x-4">
-            <label className="block text-lg font-semibold  text-gray-300">Attachments</label>
+            <label className="block text-lg font-semibold text-gray-300">Event Attachments</label>
             <CldUploadButton
-              uploadPreset={
-                process.env.NEXT_PUBLIC_CLOUDNARY_UPLOAD_PRESET as string
-              }
-              onSuccess={handleEventAttachmentsUpload}
-              className="px-4 py-2 bg-gradient-to-br from-cyan-800 to-blue-600 hover:from-blue-600 hover:to-cyan-600 text-white rounded shadow hover:scale-105 transform transition-all duration-300"
+              uploadPreset={uploadPreset}
+              onUpload={handleEventAttachmentsUpload}
+              className="bg-[#0B0C10] text-white px-4 py-2 rounded-md cursor-pointer"
             >
-              Upload
+              Upload Attachments
             </CldUploadButton>
           </div>
-          {eventAttachments.length > 0 && (
-            <div>
-              <label className="block text-lg font-semibold  text-gray-300">Uploaded Attachments:</label>
-              <ul className="list-disc list-inside space-y-2">
-                {eventAttachments.map((attachment, index) => (
-                  <li key={index} className="text-gray-300">
-                    <a
-                      href={attachment}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline hover:text-cyan-500"
-                    >
-                      Attachment {index + 1}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
         </div>
 
-        {/* Submit Button */}
-        <div className="mt-8 text-center">
+        {/* Map Component for Location Selection */}
+                 <div className="mt-8">
+                    <EventMap
+                      onLocationSelect={handleLocationSelect} // Using EventMap instead of MapComponent
+                    />
+                    {eventCoordinates && (
+                      <p className="text-gray-300 mt-2">
+                        Selected Location: Latitude {eventCoordinates.lat}, Longitude {eventCoordinates.lng}
+                      </p>
+                    )}
+                  </div>
+
+        <div className="mt-8 flex justify-center">
           <button
-            type="button"
-            onClick={handleSaveEvent}
-            className="px-11 py-3 bg-gradient-to-br from-cyan-900 to-blue-600 text-white font-semibold rounded-lg shadow-lg hover:from-blue-600 hover:to-cyan-500 hover:scale-105 transform transition-all duration-300"
+            onClick={handleEditEvent}
+            className="px-6 py-3 bg-[#4CAF50] text-white font-semibold rounded-lg hover:bg-[#45a049] transition duration-300"
           >
-            Save Event
+            Save Changes
           </button>
         </div>
       </div>

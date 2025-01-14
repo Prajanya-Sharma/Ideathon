@@ -27,7 +27,9 @@ export default function IssuesPage() {
     async function fetchIssues() {
       setLoading(true);
       try {
-        const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/issues`);
+        const res = await axios.get(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/issues`
+        );
         if (res.status === 200) {
           setIssues(res.data);
         } else {
@@ -52,16 +54,17 @@ export default function IssuesPage() {
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/issues/${action}-vote/${issueId}`
       );
       if (res.status === 200) {
-        setIssues((prevIssues) =>
-          prevIssues?.map((issue) =>
-            issue._id.toString() === issueId
-              ? {
-                ...issue,
-                isVoted: action === "add",
-                votes: action === "add" ? issue.votes+1 : issue.votes-1
-              }
-              : issue
-          ) ?? null
+        setIssues(
+          (prevIssues) =>
+            prevIssues?.map((issue) =>
+              issue._id.toString() === issueId
+                ? {
+                    ...issue,
+                    isVoted: action === "add",
+                    votes: action === "add" ? issue.votes + 1 : issue.votes - 1,
+                  }
+                : issue
+            ) ?? null
         );
       }
     } catch (error) {
@@ -78,29 +81,28 @@ export default function IssuesPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black text-white">
       {/* Page Header */}
-      <div className="w-full py-10 bg-gray-950 shadow-lg">
-        <h1 className="text-3xl font-extrabold text-center text-blue-500 tracking-wide">
+      {/* <div className="w-full py-4 bg-gray-950 shadow-lg"> */}
+      {/* <h1 className="text-3xl font-extrabold text-center text-blue-500 tracking-wide">
           Issues
-        </h1>
-        <div className="text-center mt-4 flex justify-center gap-4">
-          {/* Add Issue Button */}
-          <button
-            className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded-lg font-semibold shadow-lg transition-all duration-300"
-            onClick={() => router.push("/issues/add-issue")}
-          >
-            Add Issue
-          </button>
+        </h1> */}
+      <div className="w-full py-4 bg-gray-950 shadow-lg text-center  flex justify-center gap-4">
+        {/* Add Issue Button */}
+        <button
+          className="bg-blue-600 hover:bg-blue-700 text-white py-1 px-6 rounded-lg font-semibold shadow-lg transition-all duration-300"
+          onClick={() => router.push("/issues/add-issue")}
+        >
+          Add Issue
+        </button>
 
-          {/* My Issues Button */}
-          <button
-            className="bg-green-600 hover:bg-green-700 text-white py-2 px-6 rounded-lg font-semibold shadow-lg transition-all duration-300"
-            onClick={() => router.push("/issues/my-issues")}
-          >
-            My Issues
-          </button>
-        </div>
-
+        {/* My Issues Button */}
+        <button
+          className="bg-green-600 hover:bg-green-700 text-white py-2 px-6 rounded-lg font-semibold shadow-lg transition-all duration-300"
+          onClick={() => router.push("/issues/my-issues")}
+        >
+          My Issues
+        </button>
       </div>
+      {/* </div> */}
 
       {/* Issues List */}
       <div className="flex flex-col items-center mt-10 px-4">
@@ -109,16 +111,19 @@ export default function IssuesPage() {
             No issues have been added yet.
           </div>
         ) : (
-          <div
-            className="w-full max-w-5xl max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
+          <div className="w-full max-w-5xl max-h-[70vh]">
             {issues?.map((issue) => (
               <div
                 key={issue._id.toString()}
                 className="flex flex-col bg-gray-800 rounded-lg shadow-xl p-6 my-4 hover:scale-105 transform transition-transform duration-300"
               >
                 {/* Issue Details */}
-                <div className="text-2xl font-bold text-white">{issue.title}</div>
-                <div className="text-md text-gray-300 mt-4">{issue.description}</div>
+                <div className="text-2xl font-bold text-white">
+                  {issue.title}
+                </div>
+                <div className="text-md text-gray-300 mt-4">
+                  {issue.description}
+                </div>
                 <div className="text-xs text-gray-500 mt-4">
                   Created At: {new Date(issue.createdAt).toLocaleString()}
                 </div>
@@ -126,7 +131,9 @@ export default function IssuesPage() {
                 {/* Attachments */}
                 {issue.attachments.length > 0 && (
                   <div className="mt-6">
-                    <h3 className="text-sm text-gray-300 font-semibold">Attachments:</h3>
+                    <h3 className="text-sm text-gray-300 font-semibold">
+                      Attachments:
+                    </h3>
                     <ul className="list-disc list-inside mt-2 space-y-1">
                       {issue.attachments.map((attachment, index) => (
                         <li key={index}>
@@ -147,7 +154,9 @@ export default function IssuesPage() {
                 {/* Votes Section */}
                 <div className="mt-6 flex items-center justify-between">
                   {/* Votes Count */}
-                  <div className="text-white font-bold text-lg">{issue.votes} Votes</div>
+                  <div className="text-white font-bold text-lg">
+                    {issue.votes} Votes
+                  </div>
 
                   {/* Vote Button */}
                   {issue.isVoted ? (

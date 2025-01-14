@@ -5,6 +5,7 @@ import axios from 'axios';
 import { useRouter, useParams } from 'next/navigation';
 import { CldUploadButton } from 'next-cloudinary';
 import { signOut } from 'next-auth/react';
+import { Upload, User, Lock, Check } from 'lucide-react';
 
 const SIDVerificationPage = () => {
   const { username } = useParams();
@@ -26,7 +27,6 @@ const SIDVerificationPage = () => {
     }
 
     setIsLoading(true);
-    console.log(process.env.NEXT_PUBLIC_BACKEND_URL);
     
     try {
       const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/verify-sid/`, {
@@ -50,55 +50,77 @@ const SIDVerificationPage = () => {
   };
 
   return (
-    <>
-      <div className="flex flex-col w-full h-screen items-center justify-center">
-        <div className="flex flex-col w-2/5 h-4/5 justify-evenly items-center border-4 border-solid rounded-xl border-cyan-300 shadow-md shadow-cyan-300/50 text-lg bg-gradient-to-br from-gray-200/60 to-gray-50/60">
-          <div className="text-3xl font-bold">SID Verification</div>
+    <div className="min-h-screen bg-white flex items-center justify-center p-4">
+      <div className="w-full max-w-2xl bg-white rounded-2xl border border-gray-200 shadow-lg">
+        <div className="p-8 space-y-8">
+          {/* Header */}
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-blue-500 mb-2">
+              SID Verification
+            </h1>
+            <Lock className="mx-auto w-12 h-12 text-gray-600" />
+          </div>
 
-          <div className="flex flex-col w-full h-3/5">
-            <div className="flex flex-row justify-between items-center w-full h-1/4">
-              <label htmlFor="image" className="ml-4 text-white font-bold">
-                Upload Image:
-              </label>
+          {/* Form Content */}
+          <div className="space-y-6">
+            {/* Upload Section */}
+            <div className="space-y-2">
               <CldUploadButton
                 uploadPreset={process.env.NEXT_PUBLIC_CLOUDNARY_UPLOAD_PRESET as string}
                 onSuccess={handleImageUpload}
-                className="w-1/3 ml-12 bg-white rounded-full"
+                className="w-full py-4 px-6 rounded-xl bg-blue-500 hover:bg-blue-600 transition-all duration-300 text-white flex items-center justify-center gap-3"
               >
-                Upload Image
+                <Upload className="w-6 h-6" />
+                <span className="font-semibold">Upload Image</span>
               </CldUploadButton>
+              
+              {image && (
+                <div className="flex items-center gap-2 text-green-600 bg-green-50 p-3 rounded-lg">
+                  <Check className="w-5 h-5" />
+                  <span>Image successfully uploaded</span>
+                </div>
+              )}
             </div>
-            <div className="flex flex-col h-1/2 w-full">
-              <div className="flex flex-row justify-between items-center w-full h-1/6">
-                <label htmlFor="username" className="ml-4 text-white font-bold">
-                  Username:
-                </label>
+
+            {/* Username Field */}
+            <div className="relative">
+              <div className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 bg-gray-50">
+                <User className="w-6 h-6 text-gray-600" />
                 <input
                   type="text"
                   value={username || ''}
                   disabled
-                  className="w-3/4 mr-4 pl-2"
+                  className="w-full bg-transparent border-none text-gray-700 focus:ring-0"
                 />
               </div>
-              <div className="flex flex-row justify-between items-center w-full h-1/6">
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  className="w-full px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg disabled:bg-gray-400"
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Submitting...' : 'Submit'}
-                </button>
-              </div>
             </div>
+
+            {/* Submit Button */}
+            <button
+              onClick={handleSubmit}
+              disabled={isLoading}
+              className="w-full py-4 rounded-xl bg-blue-500 hover:bg-blue-600 transition-all duration-300 font-semibold text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Verifying...</span>
+                </div>
+              ) : (
+                'Verify Identity'
+              )}
+            </button>
           </div>
 
+          {/* Error Message */}
           {message && (
-            <p className="mt-4 text-center text-red-600">{message}</p>
+            <div className="text-center p-4 rounded-lg bg-red-50 text-red-600">
+              {message}
+            </div>
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

@@ -1,0 +1,150 @@
+Index: app/teacher/subjects/groups/attendance/show/[...subjectId]/page.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>\"use client\";\n\nimport { useState, useEffect } from \"react\";\nimport axios from \"axios\";\nimport {useParams} from \"next/navigation\";\n\ninterface Attendance {\n  subjectId: string;\n  teacherId: string;\n  totalClasses: number;\n  dateStudentMap: {\n    date: string;\n    studentsPresent: string[];\n    lectureCount: number;\n  }[];\n  groupName: string;\n  students: string[];\n}\n\nexport default function AttendancePage() {\n  const [attendanceData, setAttendanceData] = useState<Attendance | null>(null);\n  const [isLoading, setIsLoading] = useState<boolean>(true);\n  const params = useParams();\n  const subjectId = params.subjectId?.[0];\n  const groupName = params.subjectId?.[1];\n\n  useEffect(() => {\n    async function fetchAttendance() {\n      setIsLoading(true);\n      try {\n        const res = await axios.get(\n          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/teacher/subjects/groups/attendance/show/${subjectId}/${groupName}`\n        );\n        if (res.status === 200) {\n          setAttendanceData(res.data);\n        }\n      } catch (error) {\n        console.error(\"Error fetching attendance:\", error);\n      } finally {\n        setIsLoading(false);\n      }\n    }\n\n    fetchAttendance();\n  }, [subjectId, groupName]);\n\n  if (isLoading) {\n    return (\n      <div className=\"min-h-screen flex items-center justify-center bg-gray-900 text-white\">\n        <h1>Loading...</h1>\n      </div>\n    );\n  }\n\n  if (!attendanceData) {\n    return (\n      <div className=\"min-h-screen flex items-center justify-center bg-gray-900 text-white\">\n        <h1>No attendance data available.</h1>\n      </div>\n    );\n  }\n\n  return (\n    <div className=\"min-h-screen bg-gray-900 text-white p-4\">\n      <h1 className=\"text-3xl font-bold text-center text-blue-500 mb-6\">\n        Attendance for {attendanceData.groupName}\n      </h1>\n\n      <div className=\"overflow-x-auto\">\n        <table className=\"min-w-full bg-gray-800 text-left border border-gray-700 rounded-lg\">\n          <thead className=\"bg-gray-700\">\n          <tr>\n            <th className=\"px-6 py-3 border-b border-gray-600\">Student ID</th>\n            {attendanceData.dateStudentMap.map((entry) => (\n              <th\n                key={entry.date}\n                className=\"px-6 py-3 border-b border-gray-600\"\n              >\n                {entry.date} <br />\n                <span className=\"text-sm text-gray-400\">\n                    {entry.lectureCount} Lectures\n                  </span>\n              </th>\n            ))}\n          </tr>\n          </thead>\n          <tbody>\n          {attendanceData.students.map((studentId, index) => (\n            <tr\n              key={studentId}\n              className={index % 2 === 0 ? \"bg-gray-800\" : \"bg-gray-900\"}\n            >\n              <td className=\"px-6 py-4 border-b border-gray-600 font-medium\">\n                {studentId}\n              </td>\n              {attendanceData.dateStudentMap.map((entry) => (\n                <td\n                  key={`${entry.date}-${studentId}`}\n                  className=\"px-6 py-4 border-b border-gray-600 text-center\"\n                >\n                  {entry.studentsPresent.includes(studentId) ? (\n                    <span className=\"text-green-500\">✔</span>\n                  ) : (\n                    <span className=\"text-red-500\">✘</span>\n                  )}\n                </td>\n              ))}\n            </tr>\n          ))}\n          </tbody>\n        </table>\n      </div>\n    </div>\n  );\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/teacher/subjects/groups/attendance/show/[...subjectId]/page.tsx b/app/teacher/subjects/groups/attendance/show/[...subjectId]/page.tsx
+--- a/app/teacher/subjects/groups/attendance/show/[...subjectId]/page.tsx	(revision c0cecee0d8e127f452af30bfca9e84608c1d81cd)
++++ b/app/teacher/subjects/groups/attendance/show/[...subjectId]/page.tsx	(date 1736780147610)
+@@ -3,6 +3,7 @@
+ import { useState, useEffect } from "react";
+ import axios from "axios";
+ import {useParams} from "next/navigation";
++import DotsLoader from "@/components/loading/dotLoader";
+ 
+ interface Attendance {
+   subjectId: string;
+@@ -46,9 +47,7 @@
+ 
+   if (isLoading) {
+     return (
+-      <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
+-        <h1>Loading...</h1>
+-      </div>
++      <DotsLoader />
+     );
+   }
+ 
+@@ -61,47 +60,56 @@
+   }
+ 
+   return (
+-    <div className="min-h-screen bg-gray-900 text-white p-4">
+-      <h1 className="text-3xl font-bold text-center text-blue-500 mb-6">
++    <div className="min-h-screen bg-gray-900 text-white p-6">
++      {/* Header */}
++      <h1 className="text-3xl font-bold text-center text-blue-500 mb-8">
+         Attendance for {attendanceData.groupName}
+       </h1>
+ 
+-      <div className="overflow-x-auto">
+-        <table className="min-w-full bg-gray-800 text-left border border-gray-700 rounded-lg">
+-          <thead className="bg-gray-700">
+-          <tr>
+-            <th className="px-6 py-3 border-b border-gray-600">Student ID</th>
++      {/* Table Container */}
++      <div className="overflow-x-auto shadow-lg rounded-lg border border-gray-700">
++        <table className="min-w-full bg-gray-800 rounded-lg">
++          {/* Table Header */}
++          <thead>
++          <tr className="bg-gray-700 text-gray-300">
++            <th className="px-6 py-4 text-left font-semibold text-sm border-b border-gray-600">
++              Student ID
++            </th>
+             {attendanceData.dateStudentMap.map((entry) => (
+               <th
+                 key={entry.date}
+-                className="px-6 py-3 border-b border-gray-600"
++                className="px-6 py-4 text-center font-semibold text-sm border-b border-gray-600"
+               >
+                 {entry.date} <br />
+-                <span className="text-sm text-gray-400">
++                <span className="text-xs text-gray-400">
+                     {entry.lectureCount} Lectures
+                   </span>
+               </th>
+             ))}
+           </tr>
+           </thead>
++
++          {/* Table Body */}
+           <tbody>
+           {attendanceData.students.map((studentId, index) => (
+             <tr
+               key={studentId}
+-              className={index % 2 === 0 ? "bg-gray-800" : "bg-gray-900"}
++              className={
++                index % 2 === 0 ? "bg-gray-800" : "bg-gray-900"
++              }
+             >
+-              <td className="px-6 py-4 border-b border-gray-600 font-medium">
++              <td className="px-6 py-4 text-left border-b border-gray-600 font-medium text-sm">
+                 {studentId}
+               </td>
+               {attendanceData.dateStudentMap.map((entry) => (
+                 <td
+                   key={`${entry.date}-${studentId}`}
+-                  className="px-6 py-4 border-b border-gray-600 text-center"
++                  className="px-6 py-4 text-center border-b border-gray-600"
+                 >
+                   {entry.studentsPresent.includes(studentId) ? (
+-                    <span className="text-green-500">✔</span>
++                    <span className="text-green-500 font-bold">✔</span>
+                   ) : (
+-                    <span className="text-red-500">✘</span>
++                    <span className="text-red-500 font-bold">✘</span>
+                   )}
+                 </td>
+               ))}
+@@ -110,6 +118,11 @@
+           </tbody>
+         </table>
+       </div>
++
++      {/* Footer */}
++      <div className="text-center mt-6 text-gray-400 text-sm">
++        Total Classes Conducted: {attendanceData.totalClasses}
++      </div>
+     </div>
+   );
+-}
++}
+\ No newline at end of file
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"AutoImportSettings\">\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\n  </component>\n  <component name=\"ChangeListManager\">\n    <list default=\"true\" id=\"3d45d623-ee8a-421e-8d0d-07f88c3fd10c\" name=\"Changes\" comment=\"fixup! recovered files\">\n      <change afterPath=\"$PROJECT_DIR$/app/api/teacher/subjects/groups/attendance/show/[...subjectId]/route.ts\" afterDir=\"false\" />\n      <change afterPath=\"$PROJECT_DIR$/app/teacher/subjects/groups/attendance/show/[...subjectId]/page.tsx\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/.idea/workspace.xml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/.idea/workspace.xml\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/app/api/teacher/subjects/groups/[...subjectId]/route.ts\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/app/api/teacher/subjects/groups/[...subjectId]/route.ts\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/app/api/teacher/subjects/groups/attendance/[...subjectId]/route.ts\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/app/api/teacher/subjects/groups/attendance/[...subjectId]/route.ts\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/app/teacher/subjects/groups/[...subjectId]/page.tsx\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/app/teacher/subjects/groups/[...subjectId]/page.tsx\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/app/teacher/subjects/groups/attendance/[...subjectId]/page.tsx\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/app/teacher/subjects/groups/attendance/[...subjectId]/page.tsx\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/model/User.ts\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/model/User.ts\" afterDir=\"false\" />\n    </list>\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\n  </component>\n  <component name=\"FileTemplateManagerImpl\">\n    <option name=\"RECENT_TEMPLATES\">\n      <list>\n        <option value=\"tsconfig.json\" />\n        <option value=\"TypeScript File\" />\n        <option value=\"TypeScript JSX File\" />\n      </list>\n    </option>\n  </component>\n  <component name=\"Git.Settings\">\n    <option name=\"RECENT_BRANCH_BY_REPOSITORY\">\n      <map>\n        <entry key=\"$PROJECT_DIR$\" value=\"css-testing\" />\n      </map>\n    </option>\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\n    <option name=\"RESET_MODE\" value=\"MIXED\" />\n  </component>\n  <component name=\"GitHubPullRequestSearchHistory\">{\n  &quot;lastFilter&quot;: {\n    &quot;state&quot;: &quot;OPEN&quot;,\n    &quot;assignee&quot;: &quot;VaibhavVerma27&quot;\n  }\n}</component>\n  <component name=\"GithubPullRequestsUISettings\">{\n  &quot;selectedUrlAndAccountId&quot;: {\n    &quot;url&quot;: &quot;https://github.com/VaibhavVerma27/Ideathon.git&quot;,\n    &quot;accountId&quot;: &quot;2d85c29d-bd34-4650-83c7-ed5abaf2838e&quot;\n  }\n}</component>\n  <component name=\"ProblemsViewState\">\n    <option name=\"selectedTabId\" value=\"CurrentFile\" />\n  </component>\n  <component name=\"ProjectColorInfo\">{\n  &quot;associatedIndex&quot;: 5\n}</component>\n  <component name=\"ProjectId\" id=\"2pwcVN5jNvv3r7ErnbxxbDHxjE8\" />\n  <component name=\"ProjectViewState\">\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\n    <option name=\"showLibraryContents\" value=\"true\" />\n  </component>\n  <component name=\"PropertiesComponent\">{\n  &quot;keyToString&quot;: {\n    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,\n    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,\n    &quot;git-widget-placeholder&quot;: &quot;main&quot;,\n    &quot;last_opened_file_path&quot;: &quot;/home/vaibhav-verma/WebstormProjects/ideathon/app/api/teacher/announcements&quot;,\n    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,\n    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,\n    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,\n    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,\n    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,\n    &quot;ts.external.directory.path&quot;: &quot;/home/vaibhav-verma/WebstormProjects/ideathon/node_modules/typescript/lib&quot;,\n    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;\n  }\n}</component>\n  <component name=\"RecentsManager\">\n    <key name=\"CopyFile.RECENT_KEYS\">\n      <recent name=\"$PROJECT_DIR$/app/api/teacher/announcements\" />\n      <recent name=\"$PROJECT_DIR$/app/api/admin/user\" />\n    </key>\n    <key name=\"MoveFile.RECENT_KEYS\">\n      <recent name=\"$PROJECT_DIR$/app/teacher/announcements/edit/[...id]\" />\n      <recent name=\"$PROJECT_DIR$/app/api/user\" />\n      <recent name=\"$PROJECT_DIR$/app/api/study-requests/accepted-requests/[...acceptedStudyRequestId]\" />\n      <recent name=\"$PROJECT_DIR$/app/api/study-requests/my-requests\" />\n      <recent name=\"$PROJECT_DIR$/app/api/study-requests\" />\n    </key>\n  </component>\n  <component name=\"SharedIndexes\">\n    <attachedChunks>\n      <set>\n        <option value=\"bundled-js-predefined-d6986cc7102b-deb605915726-JavaScript-WS-243.22562.222\" />\n      </set>\n    </attachedChunks>\n  </component>\n  <component name=\"SpellCheckerSettings\" RuntimeDictionaries=\"0\" Folders=\"0\" CustomDictionaries=\"0\" DefaultDictionary=\"application-level\" UseSingleDictionary=\"true\" transferred=\"true\" />\n  <component name=\"TaskManager\">\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\n      <changelist id=\"3d45d623-ee8a-421e-8d0d-07f88c3fd10c\" name=\"Changes\" comment=\"\" />\n      <created>1733680600234</created>\n      <option name=\"number\" value=\"Default\" />\n      <option name=\"presentableId\" value=\"Default\" />\n      <updated>1733680600234</updated>\n      <workItem from=\"1733680601320\" duration=\"285000\" />\n      <workItem from=\"1733724675594\" duration=\"611000\" />\n      <workItem from=\"1733822080765\" duration=\"1111000\" />\n      <workItem from=\"1733835011657\" duration=\"6379000\" />\n      <workItem from=\"1733847978381\" duration=\"5516000\" />\n      <workItem from=\"1733894701134\" duration=\"9865000\" />\n      <workItem from=\"1733925499497\" duration=\"1606000\" />\n      <workItem from=\"1733928369051\" duration=\"251000\" />\n      <workItem from=\"1733928630064\" duration=\"4368000\" />\n      <workItem from=\"1733980473805\" duration=\"1457000\" />\n      <workItem from=\"1734070775491\" duration=\"813000\" />\n      <workItem from=\"1734085817459\" duration=\"30000\" />\n      <workItem from=\"1734183280596\" duration=\"5230000\" />\n      <workItem from=\"1734189002399\" duration=\"3292000\" />\n      <workItem from=\"1734192305926\" duration=\"2303000\" />\n      <workItem from=\"1734194762220\" duration=\"86000\" />\n      <workItem from=\"1734199075722\" duration=\"1951000\" />\n      <workItem from=\"1734202864084\" duration=\"690000\" />\n      <workItem from=\"1734243660946\" duration=\"163000\" />\n      <workItem from=\"1734247462466\" duration=\"601000\" />\n      <workItem from=\"1734274484596\" duration=\"221000\" />\n      <workItem from=\"1734285025230\" duration=\"756000\" />\n      <workItem from=\"1734342119399\" duration=\"12152000\" />\n      <workItem from=\"1734415130463\" duration=\"154000\" />\n      <workItem from=\"1734451510425\" duration=\"1022000\" />\n      <workItem from=\"1734515159954\" duration=\"1302000\" />\n      <workItem from=\"1734587553335\" duration=\"2223000\" />\n      <workItem from=\"1734622604490\" duration=\"6450000\" />\n      <workItem from=\"1734672636682\" duration=\"3862000\" />\n      <workItem from=\"1734697995805\" duration=\"4210000\" />\n      <workItem from=\"1734709695437\" duration=\"1288000\" />\n      <workItem from=\"1734719253317\" duration=\"6275000\" />\n      <workItem from=\"1734766424331\" duration=\"15352000\" />\n      <workItem from=\"1734859762039\" duration=\"16109000\" />\n      <workItem from=\"1734888157235\" duration=\"1752000\" />\n      <workItem from=\"1734936981008\" duration=\"20081000\" />\n      <workItem from=\"1735026512179\" duration=\"9324000\" />\n      <workItem from=\"1735048088338\" duration=\"5248000\" />\n      <workItem from=\"1735060156138\" duration=\"2618000\" />\n      <workItem from=\"1735064720771\" duration=\"656000\" />\n      <workItem from=\"1735106418820\" duration=\"148000\" />\n      <workItem from=\"1735141420059\" duration=\"11523000\" />\n      <workItem from=\"1735194562583\" duration=\"6771000\" />\n      <workItem from=\"1735224189800\" duration=\"10335000\" />\n      <workItem from=\"1735280126356\" duration=\"8507000\" />\n      <workItem from=\"1735312870855\" duration=\"4460000\" />\n      <workItem from=\"1735327415197\" duration=\"5118000\" />\n      <workItem from=\"1735368401501\" duration=\"8272000\" />\n      <workItem from=\"1735394000412\" duration=\"72000\" />\n      <workItem from=\"1735395983128\" duration=\"5172000\" />\n      <workItem from=\"1735411913079\" duration=\"275000\" />\n      <workItem from=\"1735412199180\" duration=\"4549000\" />\n      <workItem from=\"1735456473928\" duration=\"2596000\" />\n      <workItem from=\"1735473072434\" duration=\"168000\" />\n      <workItem from=\"1735476153656\" duration=\"3525000\" />\n      <workItem from=\"1735481667323\" duration=\"351000\" />\n      <workItem from=\"1735490418912\" duration=\"13947000\" />\n      <workItem from=\"1735551425427\" duration=\"1037000\" />\n      <workItem from=\"1735573605003\" duration=\"15386000\" />\n      <workItem from=\"1735630632922\" duration=\"3068000\" />\n      <workItem from=\"1735646800736\" duration=\"2798000\" />\n      <workItem from=\"1735662088128\" duration=\"1184000\" />\n      <workItem from=\"1735671274748\" duration=\"238000\" />\n      <workItem from=\"1735719997150\" duration=\"3868000\" />\n      <workItem from=\"1735738596357\" duration=\"21727000\" />\n      <workItem from=\"1735803780445\" duration=\"3957000\" />\n      <workItem from=\"1735834776101\" duration=\"1436000\" />\n      <workItem from=\"1735887939114\" duration=\"9151000\" />\n      <workItem from=\"1735912253570\" duration=\"2503000\" />\n      <workItem from=\"1735936579519\" duration=\"4282000\" />\n      <workItem from=\"1735976191219\" duration=\"1696000\" />\n      <workItem from=\"1735985050166\" duration=\"4726000\" />\n      <workItem from=\"1736003028073\" duration=\"54000\" />\n      <workItem from=\"1736005381956\" duration=\"622000\" />\n      <workItem from=\"1736015697437\" duration=\"8495000\" />\n      <workItem from=\"1736059367137\" duration=\"10380000\" />\n      <workItem from=\"1736164657551\" duration=\"6350000\" />\n      <workItem from=\"1736182719895\" duration=\"1744000\" />\n      <workItem from=\"1736235191519\" duration=\"1089000\" />\n      <workItem from=\"1736266445785\" duration=\"30000\" />\n      <workItem from=\"1736322350336\" duration=\"2281000\" />\n      <workItem from=\"1736334930878\" duration=\"1509000\" />\n      <workItem from=\"1736346401880\" duration=\"13674000\" />\n      <workItem from=\"1736404657076\" duration=\"6005000\" />\n      <workItem from=\"1736424912533\" duration=\"12432000\" />\n      <workItem from=\"1736494266531\" duration=\"2126000\" />\n      <workItem from=\"1736578088376\" duration=\"1169000\" />\n      <workItem from=\"1736580717395\" duration=\"8639000\" />\n      <workItem from=\"1736609464635\" duration=\"10431000\" />\n      <workItem from=\"1736661826883\" duration=\"29277000\" />\n      <workItem from=\"1736745014949\" duration=\"1257000\" />\n      <workItem from=\"1736750325263\" duration=\"1628000\" />\n      <workItem from=\"1736764910004\" duration=\"2972000\" />\n    </task>\n    <servers />\n  </component>\n  <component name=\"TypeScriptGeneratedFilesManager\">\n    <option name=\"version\" value=\"3\" />\n    <option name=\"exactExcludedFiles\">\n      <list>\n        <option value=\"$PROJECT_DIR$/next.config.mjs\" />\n      </list>\n    </option>\n  </component>\n  <component name=\"Vcs.Log.Tabs.Properties\">\n    <option name=\"TAB_STATES\">\n      <map>\n        <entry key=\"MAIN\">\n          <value>\n            <State>\n              <option name=\"FILTERS\">\n                <map>\n                  <entry key=\"branch\">\n                    <value>\n                      <list>\n                        <option value=\"main\" />\n                      </list>\n                    </value>\n                  </entry>\n                </map>\n              </option>\n            </State>\n          </value>\n        </entry>\n      </map>\n    </option>\n  </component>\n  <component name=\"VcsManagerConfiguration\">\n    <MESSAGE value=\"fixup! recovered files\" />\n    <option name=\"LAST_COMMIT_MESSAGE\" value=\"fixup! recovered files\" />\n  </component>\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+--- a/.idea/workspace.xml	(revision c0cecee0d8e127f452af30bfca9e84608c1d81cd)
++++ b/.idea/workspace.xml	(date 1736780302293)
+@@ -5,14 +5,8 @@
+   </component>
+   <component name="ChangeListManager">
+     <list default="true" id="3d45d623-ee8a-421e-8d0d-07f88c3fd10c" name="Changes" comment="fixup! recovered files">
+-      <change afterPath="$PROJECT_DIR$/app/api/teacher/subjects/groups/attendance/show/[...subjectId]/route.ts" afterDir="false" />
+-      <change afterPath="$PROJECT_DIR$/app/teacher/subjects/groups/attendance/show/[...subjectId]/page.tsx" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/app/api/teacher/subjects/groups/[...subjectId]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/teacher/subjects/groups/[...subjectId]/route.ts" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/app/api/teacher/subjects/groups/attendance/[...subjectId]/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/teacher/subjects/groups/attendance/[...subjectId]/route.ts" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/app/teacher/subjects/groups/[...subjectId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/teacher/subjects/groups/[...subjectId]/page.tsx" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/app/teacher/subjects/groups/attendance/[...subjectId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/teacher/subjects/groups/attendance/[...subjectId]/page.tsx" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/model/User.ts" beforeDir="false" afterPath="$PROJECT_DIR$/model/User.ts" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/app/teacher/subjects/groups/attendance/show/[...subjectId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/teacher/subjects/groups/attendance/show/[...subjectId]/page.tsx" afterDir="false" />
+     </list>
+     <option name="SHOW_DIALOG" value="false" />
+     <option name="HIGHLIGHT_CONFLICTS" value="true" />
+@@ -195,7 +189,8 @@
+       <workItem from="1736661826883" duration="29277000" />
+       <workItem from="1736745014949" duration="1257000" />
+       <workItem from="1736750325263" duration="1628000" />
+-      <workItem from="1736764910004" duration="2972000" />
++      <workItem from="1736764910004" duration="3159000" />
++      <workItem from="1736779876545" duration="426000" />
+     </task>
+     <servers />
+   </component>

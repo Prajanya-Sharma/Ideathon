@@ -94,11 +94,18 @@ export async function POST(req: Request, { params }: { params: { subjectId: stri
       )
     }
 
-    const { groupName } = await req.json();
+    const { groupName, students } = await req.json();
 
     if (!groupName) {
       return NextResponse.json(
         {error: "group Name is required"},
+        {status: 403}
+      )
+    }
+
+    if (!students.length) {
+      return NextResponse.json(
+        {error: "students are required"},
         {status: 403}
       )
     }
@@ -108,7 +115,8 @@ export async function POST(req: Request, { params }: { params: { subjectId: stri
       groupName,
       teacherId: userId,
       totalClasses: 0,
-      dateStudentMap: []
+      dateStudentMap: [],
+      students
     })
 
     if (!group) {

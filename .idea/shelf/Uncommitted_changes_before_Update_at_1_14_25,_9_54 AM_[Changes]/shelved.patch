@@ -1,0 +1,387 @@
+Index: app/events/add-event/page.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>\"use client\";\n\nimport { useEffect, useState } from \"react\";\nimport axios from \"axios\";\nimport { useRouter } from \"next/navigation\";\nimport { CldUploadButton } from \"next-cloudinary\";\nimport NavigatorButton from \"@/components/general/navigator\";\nimport DotsLoader from \"@/components/loading/dotLoader\";\nimport MapComponent from \"@/components/map/mapComponent\";\n\nexport default function AddEventPage() {\n  const [eventCoordinates, setEventCoordinates] = useState<{ lat: number; lng: number } | null>(null);\n  const [eventVenue, setEventVenue] = useState<string>(\"\")\n  const [eventHostedBy, setEventHostedBy] = useState(\"\");\n  const [tags, setTags] = useState<string[]>([]);\n  const [heading, setHeading] = useState(\"\");\n  const [description, setDescription] = useState(\"\");\n  const [poster, setPoster] = useState(\"\");\n  const [eventAttachments, setEventAttachments] = useState<string[]>([]);\n  const [clubs, setClubs] = useState<{ clubName: string }[]>([]);\n  const [date, setDate] = useState(\"\");\n  const [time, setTime] = useState(\"\");\n  const router = useRouter();\n\n  const uploadPreset = process.env.NEXT_PUBLIC_CLOUDNARY_UPLOAD_PRESET as string;\n\n  function handlePosterUpload(result: any) {\n    if (result.event === \"success\") setPoster(result.info.secure_url);\n  }\n\n  function handleEventAttachmentsUpload(result: any) {\n    if (result.event === \"success\") {\n      setEventAttachments((prev) => [...prev, result.info.secure_url]);\n    }\n  }\n\n  function handleLocationSelect(lat: number, lng: number) {\n    setEventCoordinates({ lat, lng });\n  }\n\n  async function handleAddEvent() {\n    if (!poster || !date || !time || !eventHostedBy || !description || !eventVenue) {\n      alert(\"Please fill all required fields.\");\n      return;\n    }\n\n    const eventTime = new Date(`${date}T${time}`);\n    const payload = {\n      eventHostedBy,\n      poster,\n      heading,\n      tags,\n      description,\n      eventAttachments,\n      eventVenue,\n      eventTime,\n      eventCoordinates\n    };\n\n    try {\n      const res = await axios.post(\n        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/events/add-event`,\n        payload\n      );\n\n      if (res.status === 200) router.push(`/events/${res.data._id}`);\n    } catch (err) {\n      console.error(err);\n      alert(\"Error adding the event. Please try again.\");\n    }\n  }\n\n  async function fetchClubs() {\n    try {\n      const response = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/clubs/head`);\n      if (response.status === 403) router.push(\"/\");\n      setClubs(response.data);\n    } catch (err) {\n      console.error(err);\n      router.push(\"/\");\n    }\n  }\n\n  useEffect(() => {\n    fetchClubs();\n  }, []);\n\n  if (clubs.length === 0) return <DotsLoader />;\n\n  const dropdownItems = [\n    { label: \"Events\", href: \"/events\" },\n    { label: \"Dashboard\", href: \"/profile\" },\n    { label: \"Home\", href: \"/\" },\n  ];\n\n  return (\n    <div className=\"flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-black to-[#0B0C10] p-4\">\n      <div className=\"absolute top-6 right-6\">\n        <NavigatorButton buttonText=\"Navigate\" dropdownItems={dropdownItems} />\n      </div>\n      <div className=\"w-full max-w-4xl p-6 bg-gradient-to-br from-[#1F2833] to-[#0B0C10] text-white rounded-lg shadow-xl\">\n        <h1 className=\"text-4xl font-bold text-center mb-8 text-gray-300\">Add Event</h1>\n\n        <div className=\"grid grid-cols-1 md:grid-cols-2 gap-8\">\n          <div>\n            <label className=\"block text-lg font-semibold text-gray-300\">Select Club</label>\n            <select\n              value={eventHostedBy}\n              onChange={(e) => setEventHostedBy(e.target.value)}\n              className=\"w-full p-2 text-gray-300 rounded bg-[#1F2833] border border-blue-300 focus:ring-2 focus:ring-cyan-500\"\n            >\n              <option value=\"\">Select</option>\n              {clubs.map((club) => (\n                <option value={club.clubName} key={club.clubName}>\n                  {club.clubName}\n                </option>\n              ))}\n            </select>\n          </div>\n\n          <div>\n            <label className=\"block text-lg font-semibold text-gray-300\">Tags</label>\n            {[0, 1, 2].map((_, index) => (\n              <select\n                key={index}\n                value={tags[index] || \"\"}\n                onChange={(e) => {\n                  const newTags = [...tags];\n                  newTags[index] = e.target.value;\n                  setTags(newTags);\n                }}\n                className=\"w-full p-2 rounded bg-[#1F2833] border border-blue-300 focus:ring-2 focus:ring-cyan-500\"\n              >\n                {[\"Tech\", \"Coding\", \"Robotics\", \"Music\", \"Dance\", \"Art\", \"Comedy\", \"\"].map((tag, idx) => (\n                  <option value={tag} key={idx}>\n                    {tag}\n                  </option>\n                ))}\n              </select>\n            ))}\n          </div>\n        </div>\n\n        <div className=\"space-y-6 mt-8\">\n          <div>\n            <label className=\"block text-lg font-semibold text-gray-300\">Heading</label>\n            <input\n              value={heading}\n              onChange={(e) => setHeading(e.target.value)}\n              type=\"text\"\n              placeholder=\"Event Heading\"\n              className=\"w-full p-2 rounded bg-[#1F2833] border border-blue-300 focus:ring-2 focus:ring-cyan-500\"\n            />\n          </div>\n\n          <div>\n            <label className=\"block text-lg font-semibold text-gray-300\">Description</label>\n            <textarea\n              value={description}\n              onChange={(e) => setDescription(e.target.value)}\n              placeholder=\"Event Description\"\n              className=\"w-full p-2 rounded bg-[#1F2833] border border-blue-300 focus:ring-2 focus:ring-cyan-500\"\n              rows={4}\n            />\n          </div>\n\n          <div className=\"mt-8\">\n            <label className=\"block text-lg font-semibold text-gray-300\">Event Venue (Map)</label>\n            <MapComponent onLocationSelect={handleLocationSelect} />\n            {eventCoordinates && (\n              <p className=\"text-gray-300 mt-2\">\n                Selected Location: Latitude {eventCoordinates.lat}, Longitude {eventCoordinates.lng}\n              </p>\n            )}\n          </div>\n\n          <div>\n          <label className=\"block text-lg font-semibold text-gray-300\">Event Venue</label>\n          <input\n            value={eventVenue}\n            onChange={(e) => setEventVenue(e.target.value)}\n            type=\"text\"\n            placeholder=\"Event Heading\"\n            className=\"w-full p-2 rounded bg-[#1F2833] border border-blue-300 focus:ring-2 focus:ring-cyan-500\"\n          />\n        </div>\n\n          <div className=\"grid grid-cols-1 md:grid-cols-2 gap-8\">\n            <div>\n              <label className=\"block text-lg font-semibold text-gray-300\">Date</label>\n              <input\n                value={date}\n                onChange={(e) => setDate(e.target.value)}\n                type=\"date\"\n                className=\"w-full p-2 rounded bg-[#1F2833] border border-blue-300 focus:ring-2 focus:ring-cyan-500\"\n              />\n            </div>\n            <div>\n              <label className=\"block text-lg font-semibold text-gray-300\">Time</label>\n              <input\n                value={time}\n                onChange={(e) => setTime(e.target.value)}\n                type=\"time\"\n                className=\"w-full p-2 rounded bg-[#1F2833] border border-blue-300 focus:ring-2 focus:ring-cyan-500\"\n              />\n            </div>\n          </div>\n        </div>\n\n        <div className=\"space-y-6 mt-8\">\n          <div className=\"flex items-center space-x-4\">\n            <label className=\"block text-lg font-semibold text-gray-300\">Poster</label>\n            <CldUploadButton uploadPreset={uploadPreset} onSuccess={handlePosterUpload} className=\"upload-button\">\n              Upload\n            </CldUploadButton>\n          </div>\n          {poster && <img src={poster} alt=\"Event Poster\" className=\"rounded mt-2\" />}\n\n          <div className=\"flex items-center space-x-4\">\n            <label className=\"block text-lg font-semibold text-gray-300\">Attachments</label>\n            <CldUploadButton uploadPreset={uploadPreset} onSuccess={handleEventAttachmentsUpload} className=\"upload-button\">\n              Upload\n            </CldUploadButton>\n          </div>\n          {eventAttachments.length > 0 && (\n            <ul className=\"list-disc space-y-2\">\n              {eventAttachments.map((attachment, index) => (\n                <li key={index}>\n                  <a href={attachment} target=\"_blank\" rel=\"noopener noreferrer\" className=\"underline\">\n                    Attachment {index + 1}\n                  </a>\n                </li>\n              ))}\n            </ul>\n          )}\n        </div>\n\n        <div className=\"mt-8 text-center\">\n          <button\n            type=\"button\"\n            onClick={handleAddEvent}\n            className=\"submit-button\"\n          >\n            Add Event\n          </button>\n        </div>\n      </div>\n    </div>\n  );\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/events/add-event/page.tsx b/app/events/add-event/page.tsx
+--- a/app/events/add-event/page.tsx	(revision 3772d35567780b3593db710ffa664e3f0a1fd430)
++++ b/app/events/add-event/page.tsx	(date 1736828630089)
+@@ -4,7 +4,6 @@
+ import axios from "axios";
+ import { useRouter } from "next/navigation";
+ import { CldUploadButton } from "next-cloudinary";
+-import NavigatorButton from "@/components/general/navigator";
+ import DotsLoader from "@/components/loading/dotLoader";
+ import MapComponent from "@/components/map/mapComponent";
+ 
+@@ -83,21 +82,12 @@
+ 
+   useEffect(() => {
+     fetchClubs();
+-  }, []);
++  }, [fetchClubs]);
+ 
+   if (clubs.length === 0) return <DotsLoader />;
+ 
+-  const dropdownItems = [
+-    { label: "Events", href: "/events" },
+-    { label: "Dashboard", href: "/profile" },
+-    { label: "Home", href: "/" },
+-  ];
+-
+   return (
+     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-black to-[#0B0C10] p-4">
+-      <div className="absolute top-6 right-6">
+-        <NavigatorButton buttonText="Navigate" dropdownItems={dropdownItems} />
+-      </div>
+       <div className="w-full max-w-4xl p-6 bg-gradient-to-br from-[#1F2833] to-[#0B0C10] text-white rounded-lg shadow-xl">
+         <h1 className="text-4xl font-bold text-center mb-8 text-gray-300">Add Event</h1>
+ 
+Index: app/events/[...eventId]/page.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>\"use client\";\nimport { useEffect, useState } from \"react\";\nimport { useModel } from \"../../../hooks/user-model-store\";\nimport { useParams, useRouter } from \"next/navigation\";\nimport axios from \"axios\";\nimport StudentCard from \"../../../components/student/studentCard\";\nimport mongoose from \"mongoose\";\nimport DotsLoader from \"../../../components/loading/dotLoader\";\n\ninterface InterestedMembers {\n  _id: mongoose.Types.ObjectId;\n  name: string;\n  profile: string;\n  student_id: string;\n}\n\nexport default function Event() {\n  const [interested, setInterested] = useState<boolean>(false);\n  const [interestedMembers, setInterestedMembers] = useState<InterestedMembers[]>([]);\n  const router = useRouter();\n  const params = useParams();\n  const eventId = params.eventId?.[0];\n  const { singleEvent, setSingleEvent, setLoading } = useModel();\n\n  useEffect(() => {\n    if (!eventId) return;\n\n    async function fetchData() {\n      setLoading(true);\n      try {\n        const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/events/${eventId}`);\n        if (res.status === 200) {\n          setSingleEvent(res.data.data);\n          setInterested(res.data.data.isInterested);\n          setInterestedMembers(res.data.data.interestedMembersArr);\n        } else {\n          router.push(\"/\");\n        }\n      } catch (error) {\n        console.error(\"Error fetching event data:\", error);\n        router.push(\"/\");\n      } finally {\n        setLoading(false);\n      }\n    }\n\n    fetchData();\n  }, [eventId, setSingleEvent, setLoading, router]);\n\n  if (!singleEvent) {\n    return <DotsLoader />;\n  }\n\n  const event = singleEvent;\n\n  async function handleInterested() {\n    if (!event) {\n      return;\n    }\n\n    const { _id } = event;\n    try {\n      const res = await axios.patch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/events/interested/${_id.toString()}`);\n      if (res.status === 200) {\n        if (!interested) {\n          setInterestedMembers((prev) => [...prev, res.data.studentInfo]);\n        } else {\n          setInterestedMembers((prev) =>\n            prev.filter((item) => item._id.toString() !== res.data.studentInfo._id.toString())\n          );\n        }\n        setInterested((prev) => !prev);\n      }\n    } catch (error) {\n      console.log(error);\n    }\n  }\n\n  return (\n    <div className=\"flex flex-col items-center w-full h-screen bg-[#181717] text-gray-400\">\n      {/* Event Header */}\n      <div className=\"flex flex-col sm:flex-row items-center w-full sm:w-4/5 h-1/3 mt-12 justify-between\">\n        <div className=\"flex flex-col w-full sm:w-3/5 h-full\">\n          <div className=\"flex flex-row items-center justify-between\">\n            <div className=\"text-3xl font-bold text-gray-200\">{event?.heading}</div>\n            <button\n              className={`text-lg font-bold px-6 py-2 rounded-md transition ${\n                interested\n                  ? \"bg-gradient-to-br from-cyan-800 to-blue-800\"\n                  : \"bg-gradient-to-br from-red-600 to-red-500\"\n              } text-white`}\n              onClick={handleInterested}\n            >\n              {interested ? \"Interested\" : \"Not Interested\"}\n            </button>\n          </div>\n          <div className=\"text-xl font-bold text-gray-300 mt-3 mb-2\">Description</div>\n          <div className=\"p-4 bg-[#1E1E1E] border border-blue-800 rounded-md shadow-lg\">\n            {event?.description}\n          </div>\n        </div>\n        <img\n          src={event?.poster}\n          className=\"w-full sm:w-1/3 h-full object-cover rounded-md shadow-md border border-blue-800\"\n          alt=\"Event Poster\"\n        />\n      </div>\n\n      {/* Event Details */}\n      <div className=\"flex flex-col sm:flex-row w-full sm:w-4/5 h-3/5 mt-10 justify-between\">\n        <div className=\"flex flex-col w-full sm:w-3/5 h-full\">\n          <div className=\"flex flex-col sm:flex-row justify-between\">\n            <div className=\"flex flex-col w-full sm:w-1/2 p-4 bg-[#1E1E1E] border border-blue-800 rounded-md shadow-lg\">\n              <div>\n                <strong>Venue:</strong> <span>{event.eventVenue}</span>\n              </div>\n              <div>\n                <strong>Date:</strong>{\" \"}\n                <span>{new Date(event?.eventTime).toLocaleString()}</span>\n              </div>\n              <div>\n                <strong>Hosted By:</strong> <span>{event?.eventHostedBy}</span>\n              </div>\n            </div>\n            <div className=\"flex flex-col w-full sm:w-1/3 p-4 bg-[#1E1E1E] border border-blue-800 rounded-md shadow-lg mt-4 sm:mt-0\">\n              <div className=\"text-xl font-bold text-gray-300 mb-2\">Tags</div>\n              {event?.tags.map((tag) => (\n                <div key={tag} className=\"mt-1\">\n                  {tag}\n                </div>\n              ))}\n            </div>\n          </div>\n          <div className=\"flex flex-col w-full mt-4 p-4 bg-[#1E1E1E] border border-blue-900 rounded-md shadow-lg\">\n            <div className=\"text-xl font-bold text-gray-300 mb-2\">Attachments</div>\n            {/* Attachments go here */}\n          </div>\n        </div>\n        <div className=\"flex flex-col w-full sm:w-1/3 h-4/5 p-4 overflow-y-auto bg-[#1E1E1E] border border-blue-800 rounded-md shadow-lg\">\n          <div className=\"text-xl font-bold text-gray-300 mb-4\">Interested People</div>\n          {interestedMembers.map((member) => (\n            <StudentCard\n              key={member.student_id}\n              name={member.name}\n              student_id={member.student_id}\n              profile={member.profile}\n            />\n          ))}\n        </div>\n      </div>\n    </div>\n  );\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/events/[...eventId]/page.tsx b/app/events/[...eventId]/page.tsx
+--- a/app/events/[...eventId]/page.tsx	(revision 3772d35567780b3593db710ffa664e3f0a1fd430)
++++ b/app/events/[...eventId]/page.tsx	(date 1736799058862)
+@@ -1,26 +1,37 @@
+ "use client";
+ import { useEffect, useState } from "react";
+-import { useModel } from "../../../hooks/user-model-store";
+ import { useParams, useRouter } from "next/navigation";
+ import axios from "axios";
+-import StudentCard from "../../../components/student/studentCard";
+ import mongoose from "mongoose";
+ import DotsLoader from "../../../components/loading/dotLoader";
++import { FaMapMarkerAlt, FaClock, FaTags, FaUser } from "react-icons/fa";
+ 
+-interface InterestedMembers {
++
++interface SingleEvent {
+   _id: mongoose.Types.ObjectId;
+-  name: string;
+-  profile: string;
+-  student_id: string;
++  poster: string;
++  heading: string;
++  eventHostedBy: string;
++  description: string;
++  tags: string[];
++  eventTime: Date;
++  eventVenue: string;
++  isInterested: boolean;
++  interestedMembersArr: {
++    _id: mongoose.Types.ObjectId;
++    name: string;
++    student_id: string;
++    profile: string
++  } [];
++  eventAttachments: string[]
+ }
+ 
+ export default function Event() {
+-  const [interested, setInterested] = useState<boolean>(false);
+-  const [interestedMembers, setInterestedMembers] = useState<InterestedMembers[]>([]);
+   const router = useRouter();
+   const params = useParams();
+   const eventId = params.eventId?.[0];
+-  const { singleEvent, setSingleEvent, setLoading } = useModel();
++  const [eventData, setEventData] = useState<SingleEvent | null>(null);
++  const [loading, setLoading] = useState(false);
+ 
+   useEffect(() => {
+     if (!eventId) return;
+@@ -30,9 +41,7 @@
+       try {
+         const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/events/${eventId}`);
+         if (res.status === 200) {
+-          setSingleEvent(res.data.data);
+-          setInterested(res.data.data.isInterested);
+-          setInterestedMembers(res.data.data.interestedMembersArr);
++          setEventData(res.data.data);
+         } else {
+           router.push("/");
+         }
+@@ -45,109 +54,149 @@
+     }
+ 
+     fetchData();
+-  }, [eventId, setSingleEvent, setLoading, router]);
+-
+-  if (!singleEvent) {
+-    return <DotsLoader />;
+-  }
++  }, [eventId, setLoading, router]);
+ 
+-  const event = singleEvent;
++  async function toggleInterested() {
++    if (!eventData) return;
+ 
+-  async function handleInterested() {
+-    if (!event) {
+-      return;
+-    }
+-
+-    const { _id } = event;
+     try {
+-      const res = await axios.patch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/events/interested/${_id.toString()}`);
++      const res = await axios.patch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/events/interested/${eventId}`);
+       if (res.status === 200) {
+-        if (!interested) {
+-          setInterestedMembers((prev) => [...prev, res.data.studentInfo]);
++        if (eventData.isInterested) {
++          setEventData({
++            ...eventData,
++            isInterested: !eventData.isInterested,
++            interestedMembersArr: eventData.interestedMembersArr.filter((member) => member._id.toString() !== res.data.studentInfo._id.toString()),
++          });
+         } else {
+-          setInterestedMembers((prev) =>
+-            prev.filter((item) => item._id.toString() !== res.data.studentInfo._id.toString())
+-          );
++          setEventData({
++            ...eventData,
++            isInterested: !eventData.isInterested,
++            interestedMembersArr: [...eventData.interestedMembersArr, res.data.studentInfo],
++          });
+         }
+-        setInterested((prev) => !prev);
+       }
+     } catch (error) {
+       console.log(error);
+     }
+   }
+ 
++  if (!eventData || loading) {
++    return <DotsLoader />;
++  }
++
+   return (
+-    <div className="flex flex-col items-center w-full h-screen bg-[#181717] text-gray-400">
+-      {/* Event Header */}
+-      <div className="flex flex-col sm:flex-row items-center w-full sm:w-4/5 h-1/3 mt-12 justify-between">
+-        <div className="flex flex-col w-full sm:w-3/5 h-full">
+-          <div className="flex flex-row items-center justify-between">
+-            <div className="text-3xl font-bold text-gray-200">{event?.heading}</div>
+-            <button
+-              className={`text-lg font-bold px-6 py-2 rounded-md transition ${
+-                interested
+-                  ? "bg-gradient-to-br from-cyan-800 to-blue-800"
+-                  : "bg-gradient-to-br from-red-600 to-red-500"
+-              } text-white`}
+-              onClick={handleInterested}
+-            >
+-              {interested ? "Interested" : "Not Interested"}
+-            </button>
+-          </div>
+-          <div className="text-xl font-bold text-gray-300 mt-3 mb-2">Description</div>
+-          <div className="p-4 bg-[#1E1E1E] border border-blue-800 rounded-md shadow-lg">
+-            {event?.description}
+-          </div>
+-        </div>
+-        <img
+-          src={event?.poster}
+-          className="w-full sm:w-1/3 h-full object-cover rounded-md shadow-md border border-blue-800"
+-          alt="Event Poster"
+-        />
+-      </div>
+-
+-      {/* Event Details */}
+-      <div className="flex flex-col sm:flex-row w-full sm:w-4/5 h-3/5 mt-10 justify-between">
+-        <div className="flex flex-col w-full sm:w-3/5 h-full">
+-          <div className="flex flex-col sm:flex-row justify-between">
+-            <div className="flex flex-col w-full sm:w-1/2 p-4 bg-[#1E1E1E] border border-blue-800 rounded-md shadow-lg">
+-              <div>
+-                <strong>Venue:</strong> <span>{event.eventVenue}</span>
+-              </div>
+-              <div>
+-                <strong>Date:</strong>{" "}
+-                <span>{new Date(event?.eventTime).toLocaleString()}</span>
+-              </div>
+-              <div>
+-                <strong>Hosted By:</strong> <span>{event?.eventHostedBy}</span>
+-              </div>
+-            </div>
+-            <div className="flex flex-col w-full sm:w-1/3 p-4 bg-[#1E1E1E] border border-blue-800 rounded-md shadow-lg mt-4 sm:mt-0">
+-              <div className="text-xl font-bold text-gray-300 mb-2">Tags</div>
+-              {event?.tags.map((tag) => (
+-                <div key={tag} className="mt-1">
+-                  {tag}
++    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white py-10 px-4">
++      <div className="max-w-5xl mx-auto bg-gray-800 p-8 rounded-lg shadow-2xl">
++        {/* Event Poster */}
++        <div className="mb-6">
++          <img
++            src={eventData.poster}
++            alt={eventData.heading}
++            className="rounded-lg shadow-md w-full"
++          />
++        </div>
++
++        {/* Event Details */}
++        <div className="space-y-6">
++          <h1 className="text-4xl font-extrabold text-blue-400">{eventData.heading}</h1>
++          <p className="text-lg text-gray-300">{eventData.description}</p>
++
++          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
++            <div className="flex items-center space-x-4 bg-gray-900 p-4 rounded-lg shadow-md">
++              <FaUser className="text-yellow-400 text-2xl" />
++              <p className="text-gray-300">
++                Hosted by: <span className="text-blue-300 font-semibold">{eventData.eventHostedBy}</span>
++              </p>
++            </div>
++            <div className="flex items-center space-x-4 bg-gray-900 p-4 rounded-lg shadow-md">
++              <FaClock className="text-green-400 text-2xl" />
++              <p className="text-gray-300">
++                Time:{" "}
++                <span className="text-blue-300 font-semibold">
++                  {new Date(eventData.eventTime).toLocaleString()}
++                </span>
++              </p>
++            </div>
++            <div className="flex items-center space-x-4 bg-gray-900 p-4 rounded-lg shadow-md">
++              <FaMapMarkerAlt className="text-red-400 text-2xl" />
++              <p className="text-gray-300">
++                Venue: <span className="text-blue-300 font-semibold">{eventData.eventVenue}</span>
++              </p>
++            </div>
++            <div className="flex items-center space-x-4 bg-gray-900 p-4 rounded-lg shadow-md">
++              <FaTags className="text-pink-400 text-2xl" />
++              <p className="text-gray-300">
++                Tags:{" "}
++                {eventData.tags.map((tag, index) => (
++                  <span key={index} className="text-blue-300">
++                    {tag}
++                    {index < eventData.tags.length - 1 && ", "}
++                  </span>
++                ))}
++              </p>
++            </div>
++          </div>
++
++          {/* Interested Button */}
++          <button
++            onClick={toggleInterested}
++            className={`w-full py-3 rounded-lg text-lg font-bold shadow-md ${
++              eventData.isInterested
++                ? "bg-red-600 hover:bg-red-700"
++                : "bg-green-600 hover:bg-green-700"
++            }`}
++          >
++            {eventData.isInterested ? "Not Interested" : "Interested"}
++          </button>
++        </div>
++
++        {/* Interested Members */}
++        {eventData.interestedMembersArr.length > 0 && (
++          <div className="mt-10">
++            <h2 className="text-2xl font-bold text-yellow-400 mb-6">Interested Members</h2>
++            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
++              {eventData.interestedMembersArr.map((member) => (
++                <div
++                  key={member._id.toString()}
++                  className="bg-gray-900 p-4 rounded-lg shadow-md flex items-center space-x-4"
++                >
++                  <img
++                    src={member.profile}
++                    className="w-14 h-14 rounded-full shadow-lg border-2 border-blue-400"
++                  />
++                  <div>
++                    <h3 className="text-lg font-semibold text-blue-300">
++                      {member.name}
++                    </h3>
++                    <p className="text-sm text-gray-400">{member.student_id}</p>
++                  </div>
+                 </div>
+               ))}
+             </div>
+           </div>
+-          <div className="flex flex-col w-full mt-4 p-4 bg-[#1E1E1E] border border-blue-900 rounded-md shadow-lg">
+-            <div className="text-xl font-bold text-gray-300 mb-2">Attachments</div>
+-            {/* Attachments go here */}
+-          </div>
+-        </div>
+-        <div className="flex flex-col w-full sm:w-1/3 h-4/5 p-4 overflow-y-auto bg-[#1E1E1E] border border-blue-800 rounded-md shadow-lg">
+-          <div className="text-xl font-bold text-gray-300 mb-4">Interested People</div>
+-          {interestedMembers.map((member) => (
+-            <StudentCard
+-              key={member.student_id}
+-              name={member.name}
+-              student_id={member.student_id}
+-              profile={member.profile}
+-            />
+-          ))}
+-        </div>
++        )}
++
++        {/* Attachments */}
++        {eventData.eventAttachments.length > 0 && (
++          <div className="mt-10">
++            <h2 className="text-2xl font-bold text-green-400 mb-6">Event Attachments</h2>
++            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
++              {eventData.eventAttachments.map((attachment, index) => (
++                <a
++                  key={index}
++                  href={attachment}
++                  target="_blank"
++                  rel="noopener noreferrer"
++                  className="bg-gray-900 p-4 rounded-lg shadow-md hover:bg-gray-700"
++                >
++                  Attachment {index + 1}
++                </a>
++              ))}
++            </div>
++          </div>
++        )}
+       </div>
+     </div>
+   );
+-}
++};
+Index: app/home/page.tsx
+===================================================================
+diff --git a/app/home/page.tsx b/app/home/page.tsx
+deleted file mode 100644
+--- a/app/home/page.tsx	(revision 3772d35567780b3593db710ffa664e3f0a1fd430)
++++ /dev/null	(revision 3772d35567780b3593db710ffa664e3f0a1fd430)
+@@ -1,1 +0,0 @@
+-// YEH BANA DO VAIBHAV BHAI PLEASE :))
+\ No newline at end of file
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"AutoImportSettings\">\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\n  </component>\n  <component name=\"ChangeListManager\">\n    <list default=\"true\" id=\"3d45d623-ee8a-421e-8d0d-07f88c3fd10c\" name=\"Changes\" comment=\"fixup! recovered files\">\n      <change beforePath=\"$PROJECT_DIR$/.idea/workspace.xml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/.idea/workspace.xml\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/app/admin/clubs/edit-club/[...clubId]/page.tsx\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/app/admin/edit-club/[...clubId]/page.tsx\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/app/admin/clubs/page.tsx\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/app/admin/clubs/page.tsx\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/app/clubs/page.tsx\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/app/clubs/page.tsx\" afterDir=\"false\" />\n    </list>\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\n  </component>\n  <component name=\"FileTemplateManagerImpl\">\n    <option name=\"RECENT_TEMPLATES\">\n      <list>\n        <option value=\"tsconfig.json\" />\n        <option value=\"TypeScript JSX File\" />\n        <option value=\"TypeScript File\" />\n      </list>\n    </option>\n  </component>\n  <component name=\"Git.Settings\">\n    <option name=\"RECENT_BRANCH_BY_REPOSITORY\">\n      <map>\n        <entry key=\"$PROJECT_DIR$\" value=\"css-testing\" />\n      </map>\n    </option>\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\n    <option name=\"RESET_MODE\" value=\"MIXED\" />\n  </component>\n  <component name=\"GitHubPullRequestSearchHistory\">{\n  &quot;lastFilter&quot;: {\n    &quot;state&quot;: &quot;OPEN&quot;,\n    &quot;assignee&quot;: &quot;VaibhavVerma27&quot;\n  }\n}</component>\n  <component name=\"GithubPullRequestsUISettings\">{\n  &quot;selectedUrlAndAccountId&quot;: {\n    &quot;url&quot;: &quot;https://github.com/VaibhavVerma27/Ideathon.git&quot;,\n    &quot;accountId&quot;: &quot;2d85c29d-bd34-4650-83c7-ed5abaf2838e&quot;\n  }\n}</component>\n  <component name=\"ProblemsViewState\">\n    <option name=\"selectedTabId\" value=\"CurrentFile\" />\n  </component>\n  <component name=\"ProjectColorInfo\">{\n  &quot;associatedIndex&quot;: 5\n}</component>\n  <component name=\"ProjectId\" id=\"2pwcVN5jNvv3r7ErnbxxbDHxjE8\" />\n  <component name=\"ProjectViewState\">\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\n    <option name=\"showLibraryContents\" value=\"true\" />\n  </component>\n  <component name=\"PropertiesComponent\">{\n  &quot;keyToString&quot;: {\n    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,\n    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,\n    &quot;git-widget-placeholder&quot;: &quot;main&quot;,\n    &quot;last_opened_file_path&quot;: &quot;/home/vaibhav-verma/WebstormProjects/ideathon/app/api/teacher/announcements&quot;,\n    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,\n    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,\n    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,\n    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,\n    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,\n    &quot;ts.external.directory.path&quot;: &quot;/home/vaibhav-verma/WebstormProjects/ideathon/node_modules/typescript/lib&quot;,\n    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;\n  }\n}</component>\n  <component name=\"RecentsManager\">\n    <key name=\"CopyFile.RECENT_KEYS\">\n      <recent name=\"$PROJECT_DIR$/app/api/teacher/announcements\" />\n      <recent name=\"$PROJECT_DIR$/app/api/admin/user\" />\n    </key>\n    <key name=\"MoveFile.RECENT_KEYS\">\n      <recent name=\"$PROJECT_DIR$/app/admin\" />\n      <recent name=\"$PROJECT_DIR$/app/teacher/announcements/edit/[...id]\" />\n      <recent name=\"$PROJECT_DIR$/app/api/user\" />\n      <recent name=\"$PROJECT_DIR$/app/api/study-requests/accepted-requests/[...acceptedStudyRequestId]\" />\n      <recent name=\"$PROJECT_DIR$/app/api/study-requests/my-requests\" />\n    </key>\n  </component>\n  <component name=\"SharedIndexes\">\n    <attachedChunks>\n      <set>\n        <option value=\"bundled-js-predefined-d6986cc7102b-deb605915726-JavaScript-WS-243.22562.222\" />\n      </set>\n    </attachedChunks>\n  </component>\n  <component name=\"SpellCheckerSettings\" RuntimeDictionaries=\"0\" Folders=\"0\" CustomDictionaries=\"0\" DefaultDictionary=\"application-level\" UseSingleDictionary=\"true\" transferred=\"true\" />\n  <component name=\"TaskManager\">\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\n      <changelist id=\"3d45d623-ee8a-421e-8d0d-07f88c3fd10c\" name=\"Changes\" comment=\"\" />\n      <created>1733680600234</created>\n      <option name=\"number\" value=\"Default\" />\n      <option name=\"presentableId\" value=\"Default\" />\n      <updated>1733680600234</updated>\n      <workItem from=\"1733680601320\" duration=\"285000\" />\n      <workItem from=\"1733724675594\" duration=\"611000\" />\n      <workItem from=\"1733822080765\" duration=\"1111000\" />\n      <workItem from=\"1733835011657\" duration=\"6379000\" />\n      <workItem from=\"1733847978381\" duration=\"5516000\" />\n      <workItem from=\"1733894701134\" duration=\"9865000\" />\n      <workItem from=\"1733925499497\" duration=\"1606000\" />\n      <workItem from=\"1733928369051\" duration=\"251000\" />\n      <workItem from=\"1733928630064\" duration=\"4368000\" />\n      <workItem from=\"1733980473805\" duration=\"1457000\" />\n      <workItem from=\"1734070775491\" duration=\"813000\" />\n      <workItem from=\"1734085817459\" duration=\"30000\" />\n      <workItem from=\"1734183280596\" duration=\"5230000\" />\n      <workItem from=\"1734189002399\" duration=\"3292000\" />\n      <workItem from=\"1734192305926\" duration=\"2303000\" />\n      <workItem from=\"1734194762220\" duration=\"86000\" />\n      <workItem from=\"1734199075722\" duration=\"1951000\" />\n      <workItem from=\"1734202864084\" duration=\"690000\" />\n      <workItem from=\"1734243660946\" duration=\"163000\" />\n      <workItem from=\"1734247462466\" duration=\"601000\" />\n      <workItem from=\"1734274484596\" duration=\"221000\" />\n      <workItem from=\"1734285025230\" duration=\"756000\" />\n      <workItem from=\"1734342119399\" duration=\"12152000\" />\n      <workItem from=\"1734415130463\" duration=\"154000\" />\n      <workItem from=\"1734451510425\" duration=\"1022000\" />\n      <workItem from=\"1734515159954\" duration=\"1302000\" />\n      <workItem from=\"1734587553335\" duration=\"2223000\" />\n      <workItem from=\"1734622604490\" duration=\"6450000\" />\n      <workItem from=\"1734672636682\" duration=\"3862000\" />\n      <workItem from=\"1734697995805\" duration=\"4210000\" />\n      <workItem from=\"1734709695437\" duration=\"1288000\" />\n      <workItem from=\"1734719253317\" duration=\"6275000\" />\n      <workItem from=\"1734766424331\" duration=\"15352000\" />\n      <workItem from=\"1734859762039\" duration=\"16109000\" />\n      <workItem from=\"1734888157235\" duration=\"1752000\" />\n      <workItem from=\"1734936981008\" duration=\"20081000\" />\n      <workItem from=\"1735026512179\" duration=\"9324000\" />\n      <workItem from=\"1735048088338\" duration=\"5248000\" />\n      <workItem from=\"1735060156138\" duration=\"2618000\" />\n      <workItem from=\"1735064720771\" duration=\"656000\" />\n      <workItem from=\"1735106418820\" duration=\"148000\" />\n      <workItem from=\"1735141420059\" duration=\"11523000\" />\n      <workItem from=\"1735194562583\" duration=\"6771000\" />\n      <workItem from=\"1735224189800\" duration=\"10335000\" />\n      <workItem from=\"1735280126356\" duration=\"8507000\" />\n      <workItem from=\"1735312870855\" duration=\"4460000\" />\n      <workItem from=\"1735327415197\" duration=\"5118000\" />\n      <workItem from=\"1735368401501\" duration=\"8272000\" />\n      <workItem from=\"1735394000412\" duration=\"72000\" />\n      <workItem from=\"1735395983128\" duration=\"5172000\" />\n      <workItem from=\"1735411913079\" duration=\"275000\" />\n      <workItem from=\"1735412199180\" duration=\"4549000\" />\n      <workItem from=\"1735456473928\" duration=\"2596000\" />\n      <workItem from=\"1735473072434\" duration=\"168000\" />\n      <workItem from=\"1735476153656\" duration=\"3525000\" />\n      <workItem from=\"1735481667323\" duration=\"351000\" />\n      <workItem from=\"1735490418912\" duration=\"13947000\" />\n      <workItem from=\"1735551425427\" duration=\"1037000\" />\n      <workItem from=\"1735573605003\" duration=\"15386000\" />\n      <workItem from=\"1735630632922\" duration=\"3068000\" />\n      <workItem from=\"1735646800736\" duration=\"2798000\" />\n      <workItem from=\"1735662088128\" duration=\"1184000\" />\n      <workItem from=\"1735671274748\" duration=\"238000\" />\n      <workItem from=\"1735719997150\" duration=\"3868000\" />\n      <workItem from=\"1735738596357\" duration=\"21727000\" />\n      <workItem from=\"1735803780445\" duration=\"3957000\" />\n      <workItem from=\"1735834776101\" duration=\"1436000\" />\n      <workItem from=\"1735887939114\" duration=\"9151000\" />\n      <workItem from=\"1735912253570\" duration=\"2503000\" />\n      <workItem from=\"1735936579519\" duration=\"4282000\" />\n      <workItem from=\"1735976191219\" duration=\"1696000\" />\n      <workItem from=\"1735985050166\" duration=\"4726000\" />\n      <workItem from=\"1736003028073\" duration=\"54000\" />\n      <workItem from=\"1736005381956\" duration=\"622000\" />\n      <workItem from=\"1736015697437\" duration=\"8495000\" />\n      <workItem from=\"1736059367137\" duration=\"10380000\" />\n      <workItem from=\"1736164657551\" duration=\"6350000\" />\n      <workItem from=\"1736182719895\" duration=\"1744000\" />\n      <workItem from=\"1736235191519\" duration=\"1089000\" />\n      <workItem from=\"1736266445785\" duration=\"30000\" />\n      <workItem from=\"1736322350336\" duration=\"2281000\" />\n      <workItem from=\"1736334930878\" duration=\"1509000\" />\n      <workItem from=\"1736346401880\" duration=\"13674000\" />\n      <workItem from=\"1736404657076\" duration=\"6005000\" />\n      <workItem from=\"1736424912533\" duration=\"12432000\" />\n      <workItem from=\"1736494266531\" duration=\"2126000\" />\n      <workItem from=\"1736578088376\" duration=\"1169000\" />\n      <workItem from=\"1736580717395\" duration=\"8639000\" />\n      <workItem from=\"1736609464635\" duration=\"10431000\" />\n      <workItem from=\"1736661826883\" duration=\"29277000\" />\n      <workItem from=\"1736745014949\" duration=\"1257000\" />\n      <workItem from=\"1736750325263\" duration=\"1628000\" />\n      <workItem from=\"1736764910004\" duration=\"3159000\" />\n      <workItem from=\"1736779876545\" duration=\"12607000\" />\n    </task>\n    <servers />\n  </component>\n  <component name=\"TypeScriptGeneratedFilesManager\">\n    <option name=\"version\" value=\"3\" />\n    <option name=\"exactExcludedFiles\">\n      <list>\n        <option value=\"$PROJECT_DIR$/next.config.mjs\" />\n      </list>\n    </option>\n  </component>\n  <component name=\"Vcs.Log.Tabs.Properties\">\n    <option name=\"OPEN_GENERIC_TABS\">\n      <map>\n        <entry key=\"6a35ed3b-0ed1-49df-9598-09b527d43acf\" value=\"TOOL_WINDOW\" />\n      </map>\n    </option>\n    <option name=\"TAB_STATES\">\n      <map>\n        <entry key=\"6a35ed3b-0ed1-49df-9598-09b527d43acf\">\n          <value>\n            <State />\n          </value>\n        </entry>\n        <entry key=\"MAIN\">\n          <value>\n            <State>\n              <option name=\"FILTERS\">\n                <map>\n                  <entry key=\"branch\">\n                    <value>\n                      <list>\n                        <option value=\"main\" />\n                      </list>\n                    </value>\n                  </entry>\n                </map>\n              </option>\n            </State>\n          </value>\n        </entry>\n      </map>\n    </option>\n  </component>\n  <component name=\"VcsManagerConfiguration\">\n    <MESSAGE value=\"fixup! recovered files\" />\n    <option name=\"LAST_COMMIT_MESSAGE\" value=\"fixup! recovered files\" />\n  </component>\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+--- a/.idea/workspace.xml	(revision 3772d35567780b3593db710ffa664e3f0a1fd430)
++++ b/.idea/workspace.xml	(date 1736828630163)
+@@ -6,9 +6,9 @@
+   <component name="ChangeListManager">
+     <list default="true" id="3d45d623-ee8a-421e-8d0d-07f88c3fd10c" name="Changes" comment="fixup! recovered files">
+       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/app/admin/clubs/edit-club/[...clubId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/admin/edit-club/[...clubId]/page.tsx" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/app/admin/clubs/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/admin/clubs/page.tsx" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/app/clubs/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/clubs/page.tsx" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/app/events/[...eventId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/events/[...eventId]/page.tsx" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/app/events/add-event/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/events/add-event/page.tsx" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/app/home/page.tsx" beforeDir="false" />
+     </list>
+     <option name="SHOW_DIALOG" value="false" />
+     <option name="HIGHLIGHT_CONFLICTS" value="true" />
+@@ -192,7 +192,8 @@
+       <workItem from="1736745014949" duration="1257000" />
+       <workItem from="1736750325263" duration="1628000" />
+       <workItem from="1736764910004" duration="3159000" />
+-      <workItem from="1736779876545" duration="12607000" />
++      <workItem from="1736779876545" duration="17843000" />
++      <workItem from="1736827225342" duration="1405000" />
+     </task>
+     <servers />
+   </component>

@@ -33,7 +33,7 @@ export default function SignOutButton() {
       <button
         onClick={() => signOut()}
         style={{
-          padding: '12px 20px',
+          padding: '10px 20px',
           background: 'linear-gradient(45deg, #000000, #3f51b5)',
           color: 'white',
           border: 'none',

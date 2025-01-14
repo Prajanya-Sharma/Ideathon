@@ -4,7 +4,7 @@ import dbConnect from "../../../../../../../lib/connectDb";
 import {getServerSession, User} from "next-auth";
 import {authOptions} from "../../../../../(auth)/auth/[...nextauth]/options";
 import {NextResponse} from "next/server";
-import {AttendanceModel, StudentModel} from "../../../../../../../model/User";
+import { AttendanceModel } from "../../../../../../../model/User";
 import mongoose from "mongoose";
 
 export async function GET(req: Request, { params }: { params: { subjectId: string[] } }) {
@@ -27,24 +27,36 @@ export async function GET(req: Request, { params }: { params: { subjectId: strin
 
     const { subjectId } = await params;
 
-    if (!subjectId || subjectId.length === 0) {
+    if (!subjectId || subjectId.length < 2) {
       return NextResponse.json(
         {error: 'No subjectId provided'},
         {status: 403}
       )
     }
 
-    const students = await StudentModel.aggregate([
+
+    const students = await AttendanceModel.aggregate([
       {
         $match: {
-          enrolledSubjectId: { $in: [subjectId[0]] }
+          subjectId: subjectId[0],
+          groupName: subjectId[1],
         }
       },
       {
-        $project: {
-          _id: 0,
-          name: 1,
-          student_id: 1
+        $lookup: {
+          from: "students",
+          localField: "students",
+          foreignField: "student_id",
+          as: "students",
+          pipeline: [
+            {
+              $project: {
+                _id: 0,
+                name: 1,
+                student_id: 1,
+              }
+            }
+          ]
         }
       }
     ])
@@ -56,7 +68,7 @@ export async function GET(req: Request, { params }: { params: { subjectId: strin
       )
     }
 
-    return NextResponse.json(students, {status: 200});
+    return NextResponse.json(students[0], {status: 200});
   } catch (error) {
     console.error(error);
     return NextResponse.json(

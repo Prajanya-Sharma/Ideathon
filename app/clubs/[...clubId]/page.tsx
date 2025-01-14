@@ -16,15 +16,15 @@ export default function Club() {
   const router = useRouter();
   const params = useParams();
   const clubId = params.clubId?.[0];
-  const {data:session}= useSession();
-  
+  const { data: session } = useSession();
+
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
       try {
         const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/clubs/${clubId}`);
         if (res.status === 200) {
-          setSingleClub(res.data.data);          
+          setSingleClub(res.data.data);
         } else {
           router.push("/");
         }
@@ -35,7 +35,7 @@ export default function Club() {
         setLoading(false);
       }
     }
-    
+
     fetchData();
   }, [setSingleClub, setLoading, clubId, router]);
 
@@ -44,67 +44,90 @@ export default function Club() {
   }
 
   const isSecy = singleClub.clubIdSecs.some(secy => secy.user_id === session?.user?._id);
-  console.log(singleClub);
 
   return (
-    <>
-      <div className="flex flex-col items-center h-screen bg-gradient-to-b from-[#1F2833] to-[#0B0C10]">
-        <div className="flex flex-row items-center w-4/5 h-1/3 mt-12 justify-between space-x-6">
-          <div className="flex flex-col w-3/5 h-full text-[#C5C6C7]">
-            <div className="text-3xl font-bold">Club Name: {singleClub.clubName}</div>
-            <div>
-              <div className="text-2xl mt-6 mb-3 font-bold">Secy:</div>
-              {singleClub.clubIdSecs.map((secy) => (
-                <div key={secy.student_id}>
-                  <HeadCard
-                    name={secy.name}
-                    student_id={secy.student_id}
-                    profile={secy.profile}
-                  />
+    <div className="min-h-screen bg-gradient-to-b from-[#1F2833] to-[#0B0C10] overflow-x-hidden">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Header Section */}
+        <div className="relative bg-[#1F2833] rounded-2xl p-8 shadow-2xl border border-[#1F2833] mb-12">
+          <div className="flex flex-col md:flex-row items-center gap-8">
+            {/* Club Info */}
+            <div className="flex-1 space-y-6">
+              <div className="space-y-2">
+                <h1 className="text-4xl font-bold text-[#3f9fff] mb-2 tracking-wider">
+                  {singleClub.clubName}
+                </h1>
+                <div className="h-1 w-32 bg-[#1F2833] rounded-full"></div>
+              </div>
+              
+              <div className="space-y-4">
+                <h2 className="text-2xl font-bold text-[#C5C6C7] flex items-center gap-2">
+                  Club Secretaries
+                  <div className="h-px flex-1 bg-[#1F2833] ml-4 opacity-50"></div>
+                </h2>
+                <div className="grid gap-4">
+                  {singleClub.clubIdSecs.map((secy) => (
+                    <div key={secy.student_id} className="transform hover:scale-105 transition-all duration-300">
+                      <HeadCard
+                        name={secy.name}
+                        student_id={secy.student_id}
+                        profile={secy.profile}
+                      />
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
-          </div>
-          <div className="flex flex-row justify-center items-center m-10">
-            <img
-              src={singleClub.clubLogo || "https://india.acm.org/images/acm_rgb_grad_pos_diamond.png"}
-              alt="Club Logo"
-              className="h-64 w-64 object-cover rounded-full shadow-lg border-4 border-[#66FCF1]"
-            />
+
+            {/* Club Logo */}
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-[#1F2833] to-[#364F6B] rounded-full blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
+              <img
+                src={singleClub.clubLogo || "https://india.acm.org/images/acm_rgb_grad_pos_diamond.png"}
+                alt="Club Logo"
+                className="relative h-64 w-64 object-cover rounded-full border-4 border-[#1F2833] shadow-xl transform transition duration-500 hover:scale-105"
+              />
+            </div>
           </div>
         </div>
-        <div className="flex flex-row justify-between h-full w-4/5 mt-10 space-x-6">
-          <div className="flex flex-col w-3/5 h-full justify-between text-[#C5C6C7]">
-            <div className="flex flex-row justify-between items-center">
-              <div className="text-3xl font-bold mb-4">Events</div>
-              <button
-                className="text-xl font-bold bg-gradient-to-br from-[#45A29E] to-[#66FCF1] text-[#0B0C10] w-1/4 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300"
-                onClick={() => {
-                  redirect("/events");
-                }}
-              >
-                Show All Events
-              </button>
-            </div>
-            <div className="flex flex-col w-full h-96 mt-2 overflow-y-auto border-2 rounded-xl border-[#45A29E] shadow-md bg-[#1F2833] p-4">
-              {singleClub.clubEvents.map((event) => (
-                <SmallEventCard
-                  key={event._id.toString()}
-                  heading={event.heading}
-                  isInterested={event.isInterested}
-                  eventTime={event.eventTime}
-                  eventVenue={event.eventVenue}
-                  _id={event._id.toString()}
-                  isSecy={isSecy}
-                />
-              ))}
+
+        {/* Content Section */}
+        <div className="grid md:grid-cols-3 gap-8">
+          {/* Events Section */}
+          <div className="md:col-span-2">
+            <div className="bg-[#1F2833] rounded-2xl p-6 border border-[#1F2833] shadow-xl">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-3xl font-bold text-[#C5C6C7]">Events</h2>
+                <button
+                  onClick={() => redirect("/events")}
+                  className="px-6 py-3 bg-gradient-to-r from-[#1F2833] to-[#364F6B] text-[#C5C6C7] rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                >
+                  Show All Events
+                </button>
+              </div>
+              <div className="h-[600px] overflow-y-auto pr-4 space-y-4 scrollbar-thin scrollbar-thumb-[#364F6B] scrollbar-track-[#1F2833]">
+                {singleClub.clubEvents.map((event) => (
+                  <div key={event._id.toString()} className="transform hover:scale-102 transition-all duration-300">
+                    <SmallEventCard
+                      heading={event.heading}
+                      isInterested={event.isInterested}
+                      eventTime={event.eventTime}
+                      eventVenue={event.eventVenue}
+                      _id={event._id.toString()}
+                      isSecy={isSecy}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-          <div className="flex flex-col items-center w-1/4 h-full overflow-y-auto border-2 rounded-xl border-[#45A29E] shadow-md bg-[#1F2833] p-4">
-            <div className="text-3xl font-bold mt-2 text-[#C5C6C7]">Members</div>
-            <div className="overflow-y-auto w-full">
+
+          {/* Members Section */}
+          <div className="bg-[#1F2833] rounded-2xl p-6 border border-[#1F2833] shadow-xl">
+            <h2 className="text-3xl font-bold text-[#C5C6C7] mb-6 text-center">Members</h2>
+            <div className="h-[600px] overflow-y-auto pr-4 space-y-4 scrollbar-thin scrollbar-thumb-[#364F6B] scrollbar-track-[#1F2833]">
               {singleClub.clubMembers.map((member) => (
-                <div key={member.student_id}>
+                <div key={member.student_id} className="transform hover:scale-102 transition-all duration-300">
                   <StudentCard
                     name={member.name}
                     student_id={member.student_id}
@@ -116,6 +139,6 @@ export default function Club() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

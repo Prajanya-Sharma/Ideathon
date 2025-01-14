@@ -1,141 +1,93 @@
-'use client';
+"use client";
 
-import { useSession } from "next-auth/react";
+import {useEffect, useState} from "react";
+import axios from "axios";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import DotsLoader from "../../../components/loading/dotLoader";
+import { FaBook, FaIdCard } from "react-icons/fa";
+import mongoose from "mongoose";
 
-const TeacherDashboard = () => {
-  const { data: session, status } = useSession();
+const Teacher = () => {
+  const [isLoading, setLoading]  = useState(true);
+  const [profile, setProfile] = useState<{_id: mongoose.Types.ObjectId, user_id: mongoose.Types.ObjectId, teacher_id: string, subjectTeaching: {
+      subject_code: string;
+      subject_name: string;
+    }[]}| null>(null);
   const router = useRouter();
-  const [subjectName, setSubjectName] = useState("");
-  const [subjectId, setSubjectId] = useState("");
-  const [selectedSubject, setSelectedSubject] = useState("");
 
-  if (status === "loading") {
-    return (
-      <div className="bg-gradient-to-b from-blue-900 to-black h-screen flex justify-center items-center text-white">
-        <div>Loading...</div>
-      </div>
-    );
-  }
-
-  if (!session) {
-    return (
-      <div className="bg-gradient-to-b from-blue-900 to-black h-screen flex justify-center items-center text-white">
-        <div>Please sign in</div>
-      </div>
-    );
-  }
-
-  const { user } = session;
-
-  if (!user.isTeacher) {
-    return (
-      <div className="bg-gradient-to-b from-blue-900 to-black h-screen flex justify-center items-center text-white">
-        <div>Access Denied. Only teachers are allowed here.</div>
-      </div>
-    );
-  }
-
-  const handleAddSubject = () => {
-    console.log("Subject Added:", { subjectName, subjectId });
-    setSubjectName("");
-    setSubjectId("");
-  };
-
-  const handleSubjectUpdate = () => {
-    if (selectedSubject) {
-      router.push("http://localhost:3000/dashboard/teacher/selectedSubject");
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      try {
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/teacher/profile`);
+        if (res.status === 200) {
+          setProfile(res.data);
+        } else {
+          router.push("/");
+        }
+      } catch (error) {
+        console.error("Error fetching teacher data:", error);
+        router.push("/");
+      } finally {
+        setLoading(false);
+      }
     }
-  };
+
+    fetchData();
+  }, [setProfile, setLoading, router]);
+
+  if (!profile || isLoading) {
+    return <DotsLoader />;
+  }
 
   return (
-    <div className="bg-gradient-to-b from-blue-800 to-black min-h-screen p-6 text-white font-sans transition-all duration-300">
-      <h1 className="text-4xl font-bold text-transparent bg-gradient-to-r from-white to-gray-300 bg-clip-text absolute top-5 left-5 transition-all duration-300">
-        Welcome, {user.username}
-      </h1>
-
-      <div className="mt-32 flex gap-6 justify-center">
-        {/* Add Subject Card */}
-        <div className="max-w-md w-full p-6 rounded-xl bg-black bg-opacity-60 shadow-lg">
-          <h2 className="text-2xl font-semibold mb-4">Add New Subject</h2>
-
-          <div className="mb-4">
-            <label htmlFor="subjectName" className="block text-gray-400 text-sm mb-2">
-              Add Subject Name:
-            </label>
-            <input
-              id="subjectName"
-              type="text"
-              value={subjectName}
-              onChange={(e) => setSubjectName(e.target.value)}
-              className="w-full p-3 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-600"
-              placeholder="Enter subject name"
-            />
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white py-10 px-4">
+      <div className="max-w-5xl mx-auto bg-gray-800 p-8 rounded-lg shadow-xl">
+        {/* Teacher Profile Section */}
+        <div className="bg-gray-900 p-6 rounded-lg shadow-lg">
+          <div className="flex items-center space-x-6">
+            <div>
+              <h1 className="text-4xl font-bold text-blue-400">Teacher Profile</h1>
+              <div className="mt-2 text-gray-300 space-y-1">
+                <div className="flex items-center space-x-2">
+                  <FaIdCard className="text-yellow-400" />
+                  <p>Teacher ID: {profile.teacher_id}</p>
+                </div>
+              </div>
+            </div>
           </div>
-
-          <div className="mb-4">
-            <label htmlFor="subjectId" className="block text-gray-400 text-sm mb-2">
-              Add Subject ID:
-            </label>
-            <input
-              id="subjectId"
-              type="text"
-              value={subjectId}
-              onChange={(e) => setSubjectId(e.target.value)}
-              className="w-full p-3 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-600"
-              placeholder="Enter subject ID"
-            />
-          </div>
-
-          <button
-            onClick={handleAddSubject}
-            className="w-full p-3 rounded-md bg-gradient-to-r from-blue-500 to-blue-700 text-white font-semibold hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600"
-          >
-            Add Subject
-          </button>
         </div>
 
-        {/* Choose Subject Card */}
-        <div className="max-w-md w-full p-6 rounded-xl bg-black bg-opacity-60 shadow-lg">
-          <h2 className="text-2xl font-semibold mb-4">Choose Subject to Update</h2>
-
-          <div className="mb-4">
-            <label htmlFor="chooseSubject" className="block text-gray-400 text-sm mb-2">
-              Select Subject:
-            </label>
-            <select
-              id="chooseSubject"
-              value={selectedSubject}
-              onChange={(e) => setSelectedSubject(e.target.value)}
-              className="w-full p-3 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
-            >
-              <option value="" disabled className="bg-gray-800 text-gray-400">
-                Select a subject
-              </option>
-              <option value="subject-1" className="bg-gray-800 text-white">
-                Subject 1 (ID: subject-1)
-              </option>
-              <option value="subject-2" className="bg-gray-800 text-white">
-                Subject 2 (ID: subject-2)
-              </option>
-              <option value="subject-3" className="bg-gray-800 text-white">
-                Subject 3 (ID: subject-3)
-              </option>
-            </select>
+        {/* Teaching Subjects Section */}
+        <div className="mt-10">
+          <h2 className="text-2xl font-semibold text-yellow-400 mb-6">Subjects Taught</h2>
+          <div className="space-y-6">
+            {profile.subjectTeaching.map((subject, index) => (
+              <div
+                key={index}
+                className="bg-gray-900 p-6 rounded-lg shadow-lg"
+              >
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-bold text-blue-300">
+                    {subject.subject_name}
+                  </h3>
+                  <FaBook className="text-2xl text-blue-500" />
+                </div>
+                <div className="flex justify-between items-center bg-gray-800 p-4 rounded-lg shadow-md">
+                  <span className="text-sm font-medium text-gray-300">
+                    Subject Code:
+                  </span>
+                  <span className="text-sm font-bold text-gray-200">
+                    {subject.subject_code}
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
-
-          <button
-            onClick={handleSubjectUpdate}
-            className="w-full p-3 rounded-md bg-gradient-to-r from-blue-500 to-blue-700 text-white font-semibold hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600"
-            disabled={!selectedSubject}
-          >
-            Go to Subject
-          </button>
         </div>
       </div>
     </div>
   );
 };
 
-export default TeacherDashboard;
+export default Teacher;

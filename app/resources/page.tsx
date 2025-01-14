@@ -36,20 +36,20 @@ export default function ResourcePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black text-white">
       {/* Page Header */}
-      <div className="w-full py-10 bg-gray-950 shadow-lg">
+      {/* <div className="w-full py-10 bg-gray-950 shadow-lg">
         <h1 className="text-3xl font-extrabold text-center text-blue-500 tracking-wide">
           Resources
         </h1>
-      </div>
+      </div> */}
 
       {/* Resources List */}
-      <div className="flex flex-col items-center mt-10 px-4">
+      <div className="flex flex-col items-center px-4">
         {subjects.length === 0 ? (
           <div className="text-gray-400 text-lg mt-20">
             No resources found. Please upload some resources!
           </div>
         ) : (
-          <div className="w-full max-w-5xl max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
+          <div className="w-full max-w-5xl max-h-[70vh]">
             {subjects.map((subject) => (
               <div
                 key={subject}

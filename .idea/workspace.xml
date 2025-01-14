@@ -6,10 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="3d45d623-ee8a-421e-8d0d-07f88c3fd10c" name="Changes" comment="fixup! recovered files">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/layout.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/components/chatBot/chatBot.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/chatBot/chatBot.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/context/StoreProvider.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/middleware.ts" beforeDir="false" afterPath="$PROJECT_DIR$/middleware.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/api/(auth)/verify-sid/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/(auth)/verify-sid/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/study-requests/[...studyRequestId]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/study-requests/[...studyRequestId]/page.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -19,6 +17,7 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
+        <option value="tsconfig.json" />
         <option value="TypeScript JSX File" />
         <option value="TypeScript File" />
       </list>
@@ -46,7 +45,7 @@
   }
 }</component>
   <component name="ProblemsViewState">
-    <option name="selectedTabId" value="DEPENDENCY_CHECKER_PROBLEMS_TAB" />
+    <option name="selectedTabId" value="CurrentFile" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 5
@@ -61,7 +60,7 @@
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/home/vaibhav-verma/WebstormProjects/ideathon/app/api/admin/user&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/vaibhav-verma/WebstormProjects/ideathon/app/api/teacher/announcements&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -73,14 +72,15 @@
 }</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/app/api/teacher/announcements" />
       <recent name="$PROJECT_DIR$/app/api/admin/user" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/app/api/teacher/subjects/groups/[...subjectId]" />
-      <recent name="$PROJECT_DIR$/app/api/teacher" />
-      <recent name="$PROJECT_DIR$/app/api/admin/subjects/teacher" />
       <recent name="$PROJECT_DIR$/app/admin" />
-      <recent name="$PROJECT_DIR$/app/events" />
+      <recent name="$PROJECT_DIR$/app/teacher/announcements/edit/[...id]" />
+      <recent name="$PROJECT_DIR$/app/api/user" />
+      <recent name="$PROJECT_DIR$/app/api/study-requests/accepted-requests/[...acceptedStudyRequestId]" />
+      <recent name="$PROJECT_DIR$/app/api/study-requests/my-requests" />
     </key>
   </component>
   <component name="SharedIndexes">
@@ -173,7 +173,27 @@
       <workItem from="1736003028073" duration="54000" />
       <workItem from="1736005381956" duration="622000" />
       <workItem from="1736015697437" duration="8495000" />
-      <workItem from="1736059367137" duration="8324000" />
+      <workItem from="1736059367137" duration="10380000" />
+      <workItem from="1736164657551" duration="6350000" />
+      <workItem from="1736182719895" duration="1744000" />
+      <workItem from="1736235191519" duration="1089000" />
+      <workItem from="1736266445785" duration="30000" />
+      <workItem from="1736322350336" duration="2281000" />
+      <workItem from="1736334930878" duration="1509000" />
+      <workItem from="1736346401880" duration="13674000" />
+      <workItem from="1736404657076" duration="6005000" />
+      <workItem from="1736424912533" duration="12432000" />
+      <workItem from="1736494266531" duration="2126000" />
+      <workItem from="1736578088376" duration="1169000" />
+      <workItem from="1736580717395" duration="8639000" />
+      <workItem from="1736609464635" duration="10431000" />
+      <workItem from="1736661826883" duration="29277000" />
+      <workItem from="1736745014949" duration="1257000" />
+      <workItem from="1736750325263" duration="1628000" />
+      <workItem from="1736764910004" duration="3159000" />
+      <workItem from="1736779876545" duration="17843000" />
+      <workItem from="1736827225342" duration="2213000" />
+      <workItem from="1736841852981" duration="1575000" />
     </task>
     <servers />
   </component>
@@ -186,8 +206,18 @@
     </option>
   </component>
   <component name="Vcs.Log.Tabs.Properties">
+    <option name="OPEN_GENERIC_TABS">
+      <map>
+        <entry key="6a35ed3b-0ed1-49df-9598-09b527d43acf" value="TOOL_WINDOW" />
+      </map>
+    </option>
     <option name="TAB_STATES">
       <map>
+        <entry key="6a35ed3b-0ed1-49df-9598-09b527d43acf">
+          <value>
+            <State />
+          </value>
+        </entry>
         <entry key="MAIN">
           <value>
             <State>

@@ -72,8 +72,8 @@ export async function GET(request: Request) {
       },
     ]);
 
-    if (!events || events.length === 0) {
-      return NextResponse.json({ error: 'No events found' }, { status: 404 });
+    if (!events || events.length === 0) {      
+      return NextResponse.json([]);
     }
 
     return NextResponse.json(events, { status: 200 });

@@ -8,7 +8,7 @@ export default function StudentCard({
   profile: string;
 }) {
   return (
-    <div className="flex flex-row items-center justify-start mt-5 p-4 w-full max-w-sm border-2 rounded-lg border-blue-800 bg-[#1E1E1E] hover:scale-105 transition-transform duration-300 ease-in-out shadow-lg shadow-blue-800/30 sm:max-w-md md:max-w-lg lg:max-w-xl">
+    <div className="flex flex-row items-center justify-start mt-5 p-4 w-full max-w-sm border-2 rounded-lg border-blue-800 bg-[#1E1E1E] sm:max-w-md md:max-w-lg lg:max-w-xl">
       <img
         src={profile || "https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg"}
         alt="Student Profile"

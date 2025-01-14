@@ -25,7 +25,7 @@ export async function PATCH(req: NextRequest,     { params }: { params: { clubId
 
     const {clubName, clubLogo, clubIdSecs, clubMembers, clubEvents} = await req.json();
 
-    if (!clubName || clubLogo || !clubIdSecs.length) {
+    if (!clubName || !clubLogo || !clubIdSecs.length) {
       return NextResponse.json(
         {error: "Data is missing"},
         {status: 403}
@@ -68,10 +68,10 @@ export async function PATCH(req: NextRequest,     { params }: { params: { clubId
 
     const addMember = await StudentModel.updateMany(
       { student_id: { $in: clubMembers } },
-      { $addToSet: { clubsPartOf: club._id } }
+      { $push: { clubsPartOf: club._id } }
     );
 
-    if (!addMember.upsertedCount || !removeMember.upsertedCount) {
+    if (!addMember.modifiedCount || !removeMember.modifiedCount) {
       return NextResponse.json(
         {error: 'Failed to update members'},
         {status: 500}
@@ -88,7 +88,7 @@ export async function PATCH(req: NextRequest,     { params }: { params: { clubId
       { $addToSet: { clubsHeadOf: club._id } }
     );
 
-    if (!addSecy.upsertedCount || !removeSecy.upsertedCount) {
+    if (!addSecy.modifiedCount || !removeSecy.modifiedCount) {
       return NextResponse.json(
         {error: 'Failed to update secys'},
         {status: 500}

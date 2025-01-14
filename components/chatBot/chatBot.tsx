@@ -1,7 +1,7 @@
 "use client"
 import { useState } from "react";
 import axios from "axios";
-import {useSession} from "next-auth/react";
+import { useSession } from "next-auth/react";
 
 interface Chat {
   userInput: string;
@@ -9,7 +9,7 @@ interface Chat {
 }
 
 const FloatingChatbot = () => {
-  const {data: session} = useSession();
+  const { data: session } = useSession();
   const [chat, setChat] = useState<Chat[]>([
     { userInput: "Hi!", response: "Hello! How can I assist you today?" },
   ]);
@@ -17,20 +17,28 @@ const FloatingChatbot = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isDisabled, setIsDisabled] = useState(false);
 
+  const convertLinksToAnchors = (text: string) => {
+    const urlPattern = /(https?:\/\/[^\s]+)/g;
+    
+    return text.replace(urlPattern, (url) => {
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 underline">${url}</a>`;
+    });
+  };
 
   const handleSendMessage = async () => {
     if (!userMessage.trim()) return;
     setIsDisabled(true);
 
     try {
-      setChat((chat) => [...chat, {userInput: userMessage, response: "fetching response..."}]);
-      const res = await axios.post("/api/aichatbot", {userInput: userMessage});
+      setChat((chat) => [...chat, { userInput: userMessage, response: "fetching response..." }]);
+      const res = await axios.post("/api/aichatbot", { userInput: userMessage });
       console.log(res.data);
 
       if (res.status === 200) {
         setChat((prev) => {
           const updatedChat = [...prev];
-          updatedChat[updatedChat.length - 1].response = res.data;
+          // Convert links before setting the response
+          updatedChat[updatedChat.length - 1].response = convertLinksToAnchors(res.data);
           return updatedChat;
         });
 
@@ -49,9 +57,7 @@ const FloatingChatbot = () => {
     setIsDisabled(false);
   };
 
-
   if (!session) return null;
-
   return (
     <div className="fixed bottom-8 right-8 z-50">
       {/* Chat Bubble */}

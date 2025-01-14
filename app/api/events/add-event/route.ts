@@ -11,7 +11,6 @@ import { saveAIEvents } from '../../../../lib/aiEvents';
 export async function POST(req: Request) {
     try {
         await dbConnect();
-
         const session = await getServerSession(authOptions);
         const user: User = session?.user as User;
 
@@ -25,12 +24,16 @@ export async function POST(req: Request) {
             poster,
             eventHostedBy,
             eventVenue,
+            eventCoordinates,
             eventTime,
             eventAttachments,
             heading,
             description,
             tags,
         } = await req.json();
+        const url = req.url;
+        const urlParts = url.split('/');
+        const aiLink = "http://" + urlParts[2] + "/events/";
 
         if (!eventHostedBy || !eventVenue || !eventTime || !heading || !description || !poster) {
             return NextResponse.json(
@@ -38,6 +41,9 @@ export async function POST(req: Request) {
                 { status: 400 }
             );
         }
+        console.log(heading);
+
+        console.log(eventVenue);
 
         const club = await ClubModel.findOne({ clubName: eventHostedBy });
 
@@ -58,29 +64,74 @@ export async function POST(req: Request) {
                 { status: 403 }
             );
         }
-
-        const newEvent = new EventModel({
-            eventHostedBy: club._id,
-            eventVenue,
-            eventTime,
-            poster,
-            interestedMembersArr: [],
-            eventAttachments: eventAttachments || [],
-            heading,
-            description,
-            tags,
-        });
-
-        const savedEvent = await newEvent.save();
-
-        club.clubEvents.push(savedEvent._id as mongoose.Schema.Types.ObjectId);
-        await club.save();
-
-        console.log("Adding event to AI system...");
-        await saveAIEvents(heading, description);
-        console.log("Event added to AI system.");
-
-        return NextResponse.json(savedEvent, { status: 200 });
+        if (eventCoordinates) {
+            const newEvent = new EventModel({
+                eventHostedBy: club._id,
+                eventVenue,
+                eventCoordinates,
+                eventTime,
+                poster,
+                interestedMembersArr: [],
+                eventAttachments: eventAttachments || [],
+                heading,
+                description,
+                tags,
+            });
+        
+            const savedEvent = await newEvent.save();
+        
+            club.clubEvents.push(savedEvent._id as mongoose.Schema.Types.ObjectId);
+            await club.save();
+        
+            const formattedTags = tags && tags.length > 0 ? tags.join(', ') : 'No tags';
+            const formattedDate = new Date(eventTime).toLocaleString();
+            
+            const aiDescription = `${description}\n\n` +
+                `🏢 Hosted by: ${eventHostedBy}\n` +
+                `📍 Venue: ${eventVenue}\n` +
+                `🕒 Time: ${formattedDate}\n` +
+                `🏷️ Tags: ${formattedTags}\n\n` +
+                `🔗 Event Link: ${aiLink}${savedEvent._id}`;
+        
+            console.log("Adding event to AI system...");
+            await saveAIEvents(heading, aiDescription);
+            console.log("Event added to AI system.");
+        
+            return NextResponse.json(savedEvent, { status: 200 });
+        } else {
+            const newEvent = new EventModel({
+                eventHostedBy: club._id,
+                eventVenue,
+                eventTime,
+                poster,
+                interestedMembersArr: [],
+                eventAttachments: eventAttachments || [],
+                heading,
+                description,
+                tags,
+            });
+        
+            const savedEvent = await newEvent.save();
+        
+            club.clubEvents.push(savedEvent._id as mongoose.Schema.Types.ObjectId);
+            await club.save();
+        
+            const formattedTags = tags && tags.length > 0 ? tags.join(', ') : 'No tags';
+            const formattedDate = new Date(eventTime).toLocaleString();
+            
+            const aiDescription = `${description}\n\n` +
+                `🏢 Hosted by: ${eventHostedBy}\n` +
+                `📍 Venue: ${eventVenue}\n` +
+                `🕒 Time: ${formattedDate}\n` +
+                `🏷️ Tags: ${formattedTags}\n\n` +
+                `🔗 Event Link: ${aiLink}${savedEvent._id}`;
+        
+            console.log("Adding event to AI system...");
+            await saveAIEvents(heading, aiDescription);
+            console.log("Event added to AI system.");
+        
+            return NextResponse.json(savedEvent, { status: 200 });
+        }
     } catch (error) {
         console.error('Error:', error);
         return NextResponse.json(

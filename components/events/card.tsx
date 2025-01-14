@@ -29,6 +29,15 @@ export default function EventCard({
 }: EventCardProps) {
   const [interested, setInterested] = useState(isInterested);
 
+  const formatDescription = (description: string) => {
+    return description.split('\n').map((line, index) => (
+      <span key={index}>
+        {line}
+        <br />
+      </span>
+    ));
+  };
+
   async function handleInterested() {
     try {
       const res = await axios.patch(
@@ -45,9 +54,9 @@ export default function EventCard({
 
   const router = useRouter();
   return (
-    <div className="flex flex-col sm:flex-row w-full sm:w-4/5 max-w-3xl mt-8 rounded-lg border-2 border-[#1E2A47] bg-gradient-to-br from-[#0B0C10] to-[#1F2833] shadow-lg transform hover:scale-[1.03] transition-transform duration-300">
+    <div className="flex flex-col sm:flex-row w-full max-w-full mt-8 rounded-lg border-2 border-[#1E2A47] bg-gradient-to-br from-[#0B0C10] to-[#1F2833] shadow-lg transform hover:scale-[1.01] transition-transform duration-300">
       {/* Image Section */}
-      <div className="w-full sm:w-1/3 h-56 sm:h-auto">
+      <div className="w-full sm:w-1/3 h-64 sm:h-[300px]">
         <img
           src={poster}
           alt="event poster"
@@ -56,19 +65,16 @@ export default function EventCard({
       </div>
 
       {/* Content Section */}
-      <div className="flex flex-col justify-between w-full sm:w-2/3 p-4 sm:p-6 text-white">
+      <div className="flex flex-col justify-between w-full sm:w-2/3 p-6 text-white">
         {/* Header Section */}
         <div>
           <div className="flex justify-between items-center">
             <h2
-              className="text-2xl sm:text-3xl font-tracking-wide text-gray-400 hover:text-gray-200 transition-colors cursor-pointer"
+              className="text-2xl sm:text-3xl font-tracking-wide text-gray-400 hover:text-gray-200 transition-colors cursor-pointer font-archivo"
               onClick={() => router.push(`/events/${_id}`)}
             >
               {heading}
             </h2>
-            <span className="text-lg sm:text-xl font-medium text-gray-400">
-              {eventHostedBy}
-            </span>
           </div>
 
           {/* Tags */}
@@ -79,33 +85,39 @@ export default function EventCard({
           </div>
 
           {/* Description */}
-          <p className="mt-4 text-sm sm:text-base text-gray-400 leading-relaxed max-h-24 sm:max-h-32 overflow-hidden hover:overflow-auto transition-all duration-300">
-            {description}
-          </p>
+          <div className="mt-4 text-sm sm:text-base text-gray-400 leading-relaxed max-h-24 sm:max-h-32 overflow-hidden hover:overflow-auto transition-all duration-300 whitespace-pre-line">
+            {formatDescription(description)}
+          </div>
         </div>
 
-        {/* Time and Venue */}
+        {/* Time, Venue, and Hosted By */}
         <div className="mt-6">
           <p className="text-sm sm:text-base text-gray-400">
-            <span className="font-semibold bg-gradient-to-br from-cyan-800 to-blue-600 text-transparent bg-clip-text">
+            <span className="font-semibold bg-gradient-to-r from-blue-600 to-cyan-500 text-transparent bg-clip-text">
               Time:
             </span>{" "}
             {new Date(eventTime).toLocaleString()}
           </p>
           <p className="text-sm sm:text-base text-gray-400">
-            <span className="font-semibold bg-gradient-to-br from-cyan-800 to-blue-600 text-transparent bg-clip-text">
+            <span className="font-semibold bg-gradient-to-r from-blue-600 to-cyan-500 text-transparent bg-clip-text">
               Venue:
             </span>{" "}
             {eventVenue}
+          </p>
+          <p className="text-sm sm:text-base text-gray-400">
+            <span className="font-semibold bg-gradient-to-r from-blue-600 to-cyan-500 text-transparent bg-clip-text">
+              Hosted By:
+            </span>{" "}
+            {eventHostedBy}
           </p>
         </div>
 
         {/* Interested Button */}
         <button
-          className={`mt-6 px-4 py-2 rounded-md font-medium sm:font-bold text-sm sm:text-base w-full sm:w-1/2 self-center transition-all duration-300 ${
+          className={`mt-6 px-4 py-2 rounded-md font-medium sm:font-bold text-sm sm:text-base w-full sm:w-1/2 self-center transition-all duration-300 shadow-lg ${
             interested
-              ? "bg-gradient-to-br from-cyan-800 to-blue-600 text-gray-400 hover:from-blue-700 hover:to-blue-800"
-              : "bg-gradient-to-br from-cyan-800 to-blue-600 text-gray-400 hover:from-blue-700 hover:to-blue-800"
+              ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 hover:shadow-emerald-500/25"
+              : "bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:from-blue-700 hover:to-cyan-600 hover:shadow-cyan-500/25"
           }`}
           onClick={handleInterested}
         >

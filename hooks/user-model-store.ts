@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import mongoose from "mongoose";
-import {string} from "zod";
 
 interface Event {
     _id: mongoose.Types.ObjectId,
@@ -176,7 +175,135 @@ interface Resource {
     fileName: string;
 }
 
+interface StudyRequest {
+    _id: mongoose.Types.ObjectId;
+    user_id: {
+        _id: mongoose.Types.ObjectId;
+        name: string;
+        student_id: string;
+        profile: string;
+        branch: string;
+        semester: number;
+    };
+    subjectId: string;
+    subjectName: string;
+    description: string;
+    attachments: string[];
+    price: number;
+    applied: mongoose.Types.ObjectId[];
+    isApplied: boolean;
+}
+
+interface MyRequest {
+    _id: mongoose.Types.ObjectId;
+    subjectId: string;
+    subjectName: string;
+    description: string;
+    attachments: string[];
+    price: number;
+    applied: number;
+}
+
+interface MyRequestToTeach {
+    _id: mongoose.Types.ObjectId;
+    description: string;
+    attachments: string[];
+    phoneNumber: number;
+    studyRequest: {
+        _id: mongoose.Types.ObjectId,
+        author: {
+            name: string,
+            student_id: string,
+            profile: string,
+        },
+        subjectId: string,
+        subjectName: string,
+        description: string,
+        attachments: string[],
+        price: number,
+        applied: number
+    }
+}
+
+export interface SingleRequest {
+    studyRequest: {
+        _id: mongoose.Types.ObjectId;
+        user_id: mongoose.Types.ObjectId;
+        subjectId: string;
+        subjectName: string;
+        description: string;
+        attachments: string[];
+        price: number;
+        applied: mongoose.Types.ObjectId[];
+    },
+    requestsToTeach: {
+        _id: mongoose.Types.ObjectId;
+        attachments: string[];
+        phoneNumber: number;
+        description: string;
+        teacher: {
+            student_id: string;
+            name: string;
+            profile: string;
+            semester: number;
+            branch: string;
+            subjectMarks: {
+                subjectId: string;
+                allMarks: {
+                    examType: string;
+                    marks: number;
+                }[];
+            }[]
+        }
+    }[]
+}
+
+
+interface AcceptedRequest {
+    _id: mongoose.Types.ObjectId;
+    teacher: {
+        name: string;
+        student_id: string;
+        semester: number;
+        branch: string;
+        profile: string;
+    },
+    subjectId: string;
+    subjectName: string;
+    description: string;
+    studentAttachments: string[];
+    teacherAttachments: string[];
+    teacherPhoneNumber: number;
+    roomId: string;
+}
+
+
+interface AcceptedRequestToTeach {
+    _id: mongoose.Types.ObjectId;
+    student: {
+        name: string;
+        student_id: string;
+        semester: number;
+        branch: string;
+        profile: string;
+    },
+    subjectId: string;
+    subjectName: string;
+    description: string;
+    studentAttachments: string[];
+    teacherAttachments: string[];
+    studentPhoneNumber: number;
+    roomId: string;
+}
+
+
 interface ModelStore {
+    acceptedRequestsToTeach: AcceptedRequestToTeach[]|[];
+    acceptedRequests: AcceptedRequest[]|[];
+    singleRequest: SingleRequest|null;
+    myRequestsToTeach: MyRequestToTeach[]|[];
+    myRequests: MyRequest[]|[];
+    studyRequests: StudyRequest[]|[];
     resources: Resource[]|[];
     students: Student[]|[];
     groups: Group[]|[];
@@ -194,6 +321,12 @@ interface ModelStore {
     allEvents: Event[];
     singleEvent:SingleEvent|null;
     isLoading: boolean;
+    setAcceptedRequestsToTeach: (acceptedRequestsToTeach: AcceptedRequestToTeach[]) => void;
+    setAcceptedRequests: (acceptedRequests: AcceptedRequest[]) => void;
+    setSingleRequest: (singleRequest: SingleRequest) => void;
+    setMyRequestsToTeach: (myRequestsToTeach: MyRequestToTeach[]) => void;
+    setMyRequests: (myRequests: MyRequest[]) => void;
+    setStudyRequests: (studyRequests: StudyRequest[]) => void;
     setResources: (resources: Resource[]) => void;
     setStudents: (students: Student[]) => void;
     setGroups: (groups: Group[]) => void;
@@ -214,6 +347,12 @@ interface ModelStore {
 }
 
 export const useModel = create<ModelStore>((set) => ({
+    acceptedRequestsToTeach: [],
+    acceptedRequests: [],
+    singleRequest: null,
+    myRequestsToTeach: [],
+    myRequests: [],
+    studyRequests: [],
     resources: [],
     students: [],
     groups: [],
@@ -231,6 +370,12 @@ export const useModel = create<ModelStore>((set) => ({
     editClub:null,
     profile: null,
     isLoading: false,
+    setAcceptedRequestsToTeach: ((acceptedRequestsToTeach) => set({acceptedRequestsToTeach})),
+    setAcceptedRequests: ((acceptedRequests) => set({acceptedRequests})),
+    setSingleRequest: ((singleRequest) => set({singleRequest})),
+    setMyRequestsToTeach: ((myRequestsToTeach) => set({myRequestsToTeach})),
+    setMyRequests: ((myRequests) => set({myRequests: myRequests})),
+    setStudyRequests: ((studyRequests) => set({studyRequests: studyRequests})),
     setResources: ((resources) => set({resources: resources})),
     setStudents: ((students) => set({students: students})),
     setGroups: ((groups) => set({groups: groups})),

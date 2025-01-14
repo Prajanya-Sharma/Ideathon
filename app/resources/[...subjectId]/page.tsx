@@ -57,7 +57,7 @@ export default function SingleResourcePage() {
             </div>
           ) : (
             <div
-              className="flex flex-col space-y-4 max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800"
+              className="flex flex-col space-y-4 max-h-[400px]"
             >
               {resources.map((resource, index) => (
                 <div

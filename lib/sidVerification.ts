@@ -1,64 +1,92 @@
+// text-extraction.ts
 import Tesseract from 'tesseract.js';
 import fetch from 'node-fetch';
+import AbortController from 'abort-controller';
+import Groq from 'groq-sdk';
 
-/**
- * Extracts details like Name, Department, and Identity No. from the text.
- *
- * @param {string} text - The input text to extract details from.
- * @returns {object} An object containing name, department, and identity number.
- */
-export const extractDetails = (text: string): { name: string | null; department: string | null; identityNo: string | null } => {
-  const nameMatch = text.match(/(Name|Namc):?\s*([A-Za-z]+(?:[ '-][A-Za-z]+)*)(?=\s*[-'\n$])/); 
-  const identityMatch = text.match(/Identity No\.:\s*(\d+)/);
-  const departmentMatch = text.match(/Department:\s*(.+)/);
+const groqClient = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
+});
 
-  const name = nameMatch ? nameMatch[2].trim().replace(/\s+[A-Za-z]$/, '') : null;  // Removing trailing single letters like 'O'
-  const identityNo = identityMatch ? identityMatch[1].trim() : null;
-  const department = departmentMatch ? departmentMatch[1].trim() : null;
+export const extractDetails = async (text: string): Promise<{ name: string | null; department: string | null; identityNo: string | null }> => {
+  // Fix 1: Add error handling for empty or invalid text
+  if (!text || typeof text !== 'string') {
+    console.error('Invalid text input:', text);
+    return { name: null, department: null, identityNo: null };
+  }
 
-  console.log(`Name: ${name}`);
-  console.log(nameMatch)
-  console.log(`Identity No.: ${identityNo}`);
+  // Fix 2: Improve prompts to be more specific and handle edge cases
+  const promptSID = `Extract only the student ID number from this text. If multiple numbers exist, pick the one that looks like a student ID. Return only the number, no additional text: ${text}.  DO KEEP IN MIND: There should be no other text, just the department name and no other generated text from your side`;
+  const promptName = `Extract only the student's full name from this text. Return only the name, no additional text: ${text},  DO KEEP IN MIND: There should be no other text, just the department name and no other generated text from your side`;
+  const promptDepartment = `Extract only the department name from this text. Return only the department name, no additional text: ${text}. DO KEEP IN MIND: There should be no other text, just the department name and no other generated text from your side`;
 
-  return { name, department, identityNo };
+  try {
+    const [sidCompletion, nameCompletion, deptCompletion] = await Promise.all([
+      groqClient.chat.completions.create({
+        messages: [{ role: 'user', content: promptSID }],
+        model: 'llama3-8b-8192',
+      }),
+      groqClient.chat.completions.create({
+        messages: [{ role: 'user', content: promptName }],
+        model: 'llama3-8b-8192',
+      }),
+      groqClient.chat.completions.create({
+        messages: [{ role: 'user', content: promptDepartment }],
+        model: 'llama3-8b-8192',
+      })
+    ]);
+
+    // Fix 3: Proper response extraction
+    const identityNo = sidCompletion.choices[0]?.message?.content?.trim() || null;
+    const name = nameCompletion.choices[0]?.message?.content?.trim() || null;
+    const department = deptCompletion.choices[0]?.message?.content?.trim() || null;
+
+    console.log('Extracted details:', { identityNo, name, department });
+    return { name, department, identityNo };
+  } catch (error) {
+    console.error('Error in extractDetails:', error);
+    return { name: null, department: null, identityNo: null };
+  }
 };
 
-
-
-/**
- * Extracts text from an array of image URLs.
- *
- * @param {string[]} imageLinks - An array of image URLs.
- * @returns {Promise<Record<string, string>>} A promise resolving to a dictionary mapping file names to extracted text.
- */
 const extractTextFromImageLinks = async (imageLinks: string[]): Promise<Record<string, string>> => {
+  // Fix 4: Add input validation
+  if (!Array.isArray(imageLinks) || imageLinks.length === 0) {
+    throw new Error('Invalid image links input');
+  }
+
   const extractedText: Record<string, string> = {};
 
-  // Process each image link asynchronously
   await Promise.all(imageLinks.map(async (link) => {
     try {
-      // Fetch the image from the URL
+      // Fix 5: Add timeout to fetch
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
+
       const response = await fetch(link);
+      clearTimeout(timeout);
+
       if (!response.ok) {
         throw new Error(`Failed to fetch image: ${response.statusText}`);
       }
-      console.log('here');
-      
-      const imageBuffer = await response.buffer();
-      
-      // Use Tesseract.js to recognize text
-      const { data: { text } } = await Tesseract.recognize(imageBuffer, 'eng');
 
-      // Map the extracted text to the image link
-      extractedText[link] = text;
-      console.log(extractedText);
-      
+      const imageBuffer = await response.buffer();
+
+      // Fix 6: Add Tesseract configuration for better OCR
+      const { data: { text } } = await Tesseract.recognize(imageBuffer, 'eng', {
+        logger: m => console.log(m),
+        // tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.- ',
+      });
+
+      extractedText[link] = text.trim();
+      console.log('Extracted text from image:', text.trim());
     } catch (error) {
       console.error(`Error processing ${link}:`, error);
+      extractedText[link] = '';
     }
-  }));  
+  }));
+
   return extractedText;
 };
 
-// Example usage
 export default extractTextFromImageLinks;

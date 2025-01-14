@@ -21,9 +21,10 @@ export default function AttendancePage() {
 
       setLoading(true);
       try {
-        const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/teacher/subjects/groups/attendance/${subjectId}`);
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/teacher/subjects/groups/attendance/${subjectId}/${groupName}`);
         if (res.status === 200) {
-          setStudents(res.data);
+          setStudents(res.data.students);
+          console.log(res.data);
         } else {
           router.push("/");
         }
@@ -36,7 +37,7 @@ export default function AttendancePage() {
     }
 
     fetchData();
-  }, [router, setStudents, setLoading, subjectId]);
+  }, [router, setStudents, setLoading, subjectId, groupName]);
 
 
   async function handleSubmitAttendance() {
@@ -113,7 +114,7 @@ export default function AttendancePage() {
         </div>
 
         {/* Students List */}
-        {students.length === 0 ? (
+        {students && students.length === 0 ? (
           <div className="text-gray-400 text-lg mt-20">
             No students found. Add some students to the group!
           </div>

@@ -1,8 +1,8 @@
-'use client'
+"use client";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import axios from "axios";
-import {useModel} from "../../../hooks/user-model-store";
+import { useModel } from "../../../hooks/user-model-store";
 import DotsLoader from "../../../components/loading/dotLoader";
 
 export default function ClubsPage() {
@@ -31,62 +31,54 @@ export default function ClubsPage() {
   }, [router, setAllClub, setLoading]);
 
   if (isLoading) {
-    return <DotsLoader />;
+    return (
+      <DotsLoader />
+    );
   }
 
   if (allClubs.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black text-white">
-        <div className="w-full py-10 bg-gray-950 shadow-lg">
-          <h1 className="text-3xl font-extrabold text-center text-blue-500 tracking-wide">
-            No Clubs Available
-          </h1>
-        </div>
-        <div className="flex flex-col items-center mt-20 px-4">
-          <div className="text-gray-400 text-lg">There are no clubs to display right now.</div>
+        <div className="flex flex-col items-center justify-center min-h-screen p-4">
+          <h2 className="text-2xl font-semibold mb-4">No Clubs Available</h2>
+          <p className="text-gray-300">There are no clubs to display right now.</p>
         </div>
       </div>
     );
   }
 
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black text-white">
-      {/* Page Header */}
-      <div className="w-full py-10 bg-gray-950 shadow-lg">
-        <h1 className="text-4xl font-extrabold text-center text-blue-500 tracking-wide">
-          Clubs
-        </h1>
-      </div>
-
-      {/* Clubs List */}
-      <div className="flex flex-col items-center mt-10 px-4">
-        <div className="w-full max-w-7xl max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
+      <div className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {allClubs.map((club) => (
             <div
               key={club._id.toString()}
-              className="flex flex-col md:flex-row w-full bg-gray-800 rounded-lg shadow-lg items-center justify-between p-6 my-8 hover:scale-105 transform transition-transform duration-300"
+              className="bg-gray-800/50 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden transition-transform duration-300 hover:scale-105 border border-gray-700"
             >
-              {/* Club Logo */}
-              <div className="flex justify-center items-center mb-6 md:mb-0 md:mr-8">
-                <img
-                  src={club.clubLogo || "https://india.acm.org/images/acm_rgb_grad_pos_diamond.png"}
-                  className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 shadow-lg border-blue-500"
-                  alt={`${club.clubName} Logo`}
-                />
-              </div>
+              <div className="flex flex-col h-full">
+                <div className="p-6 flex items-center justify-center">
+                  <img
+                    src={club.clubLogo || '/default-club-logo.png'}
+                    alt={`${club.clubName} logo`}
+                    className="w-32 h-32 object-contain"
+                  />
+                </div>
 
-              {/* Club Details */}
-              <div className="flex flex-col justify-center items-center md:items-start text-center md:text-left">
-                <div className="text-2xl font-bold text-white mb-4">{club.clubName}</div>
+                <div className="p-6 flex flex-col flex-grow">
+                  <h3 className="text-xl font-semibold mb-4 text-center text-white">
+                    {club.clubName}
+                  </h3>
 
-                {/* View Club Button */}
-                <button
-                  className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded-lg font-semibold shadow-xl transition-all duration-300 mt-4 md:mt-0"
-                  onClick={() => router.replace(`clubs/edit-club/${club._id.toString()}`)}
-                >
-                  Edit Club
-                </button>
+                  <div className="mt-auto flex justify-center">
+                    <button
+                      onClick={() => router.push(`admin/edit-club/${club._id}`)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md transition-colors duration-300"
+                    >
+                      Edit Club
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           ))}

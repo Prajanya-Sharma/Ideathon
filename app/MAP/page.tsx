@@ -1,7 +1,7 @@
 import dynamic from 'next/dynamic';
 import React from 'react';
 
-const OpenStreetMap = dynamic(() => import('../../components/OpenStreetMap/ostm'), {});
+const OpenStreetMap = dynamic(() => import('../../components/map/ostm'), {});
 
 const Index: React.FC = () => {
   return (
