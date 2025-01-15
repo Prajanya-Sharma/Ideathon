@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
 import { useRouter, useParams } from 'next/navigation';
 import { CldUploadButton } from 'next-cloudinary';
@@ -37,7 +37,7 @@ const SIDVerificationPage = () => {
       if (response.data.success) {
         setMessage(response.data.message);
         await signOut();
-        router.replace('/auth/sign-in');
+        router.replace('/dashboard/student');
       } else {
         setMessage(response.data.message);
       }

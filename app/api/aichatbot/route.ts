@@ -3,7 +3,7 @@ import { authOptions } from "../(auth)/auth/[...nextauth]/options";
 import { QdrantClient } from '@qdrant/js-client-rest';
 import mongoose from "mongoose";
 import { NextResponse } from "next/server";
-import { getServerSession, User } from "next-auth";
+import { getServerSession } from "next-auth";
 import { Student, StudentModel, TeacherModel, aiChatBotModel } from "../../../model/User";
 import { ObjectId } from "bson";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
@@ -44,7 +44,7 @@ const classifyQuery = async (query: string): Promise<string> => {
   // }
   // return 'general';
 
-  const prompt = `I am providing you a query, based on the query your work is detect whether that is related to marks, events or general information. \n\nQuery: ${query} \n\nPlease type marks, events or general based on the query. \n\nPlease type only one of the three words and dont type any other text. \n\nIf you are not sure, you can type general.`;
+  const prompt = `I am providing you a query, based on the query your work is detect whether that is related to marks, events or general information. \n\nQuery: ${query} \n\nPlease type marks, events or general based on the query. \n\nPlease type only one of the three words and dont type any other text. \n\nIf you are not sure, you can type general. Write your lowercase only, never put anything in uppercase`;
 
   const completion = await groqClient.chat.completions.create({
   messages: [{ role: 'user', content: prompt }],
