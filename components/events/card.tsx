@@ -14,6 +14,7 @@ interface EventCardProps {
   eventTime: Date;
   eventVenue: string;
   isInterested: boolean;
+  activeTab: string;  // Add this prop
 }
 
 export default function EventCard({
@@ -26,6 +27,7 @@ export default function EventCard({
   eventTime,
   eventVenue,
   isInterested,
+  activeTab,  // Add this
 }: EventCardProps) {
   const [interested, setInterested] = useState(isInterested);
 
@@ -37,20 +39,34 @@ export default function EventCard({
       </span>
     ));
   };
-
   async function handleInterested() {
     try {
       const res = await axios.patch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/events/interested/${_id}`
       );
       if (res.status === 200) {
-        console.log("Interest status updated");
         setInterested(!interested);
+        // Refresh the page while maintaining the active tab
+        window.location.href = `/events?tab=${activeTab}`;
       }
     } catch (error) {
       console.log("Error updating interest status:", error);
     }
   }
+
+  // async function handleInterested() {
+  //   try {
+  //     const res = await axios.patch(
+  //       `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/events/interested/${_id}`
+  //     );
+  //     if (res.status === 200) {
+  //       console.log("Interest status updated");
+  //       setInterested(!interested);
+  //     }
+  //   } catch (error) {
+  //     console.log("Error updating interest status:", error);
+  //   }
+  // }
 
   const router = useRouter();
   return (

@@ -40,7 +40,8 @@ export default function RootLayout({
           className={`${geistSans.variable} ${geistMono.variable} ${ArchivoBlack.variable} antialiased`}
         >
           <ClientOnly>
-            {pathname !== "/sign-in" && <Navbar />}
+            {(pathname !== "/sign-in" && pathname !== "/sign-up" && !pathname.startsWith(`/verify-sid`)) && <Navbar />}
+
           </ClientOnly>
 
           {children}

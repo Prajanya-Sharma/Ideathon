@@ -37,7 +37,7 @@ const SIDVerificationPage = () => {
       if (response.data.success) {
         setMessage(response.data.message);
         await signOut();
-        router.replace('/auth/sign-in');
+        router.replace('/dashboard/student');
       } else {
         setMessage(response.data.message);
       }
